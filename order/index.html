@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>הזמנה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:           oklch(22% 0.012 145);
+  --ink-2:         oklch(42% 0.012 145);
+  --ink-3:         oklch(60% 0.010 145);
+  --ink-4:         oklch(75% 0.008 145);
+  --bg:            oklch(97.5% 0.008 95);
+  --surface:       #ffffff;
+  --surface-2:     oklch(96% 0.010 95);
+  --line:          oklch(91% 0.008 95);
+  --line-strong:   oklch(85% 0.010 95);
+  --brand:         oklch(45% 0.085 152);
+  --brand-deep:    oklch(36% 0.075 152);
+  --brand-soft:    oklch(94% 0.030 152);
+  --brand-ink:     oklch(28% 0.060 152);
+  --amber:         oklch(72% 0.130 70);
+  --amber-soft:    oklch(95% 0.035 75);
+  --amber-ink:     oklch(45% 0.110 60);
+  --danger:        oklch(58% 0.180 25);
+  --r-sm: 8px;
+  --r:    12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);min-height:100vh}
+body{
+  font-family:'Heebo',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  font-size:15px;
+  line-height:1.4;
+}
+.hidden{display:none!important}
+button{font-family:inherit}
+button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+.hdr{
+  background:var(--surface);
+  padding:14px 18px 12px;
+  display:flex;align-items:center;gap:14px;
+  position:sticky;top:0;z-index:100;
+  border-bottom:1px solid var(--line);
+}
+.hdr-mark{
+  width:40px;height:40px;flex-shrink:0;
+  border-radius:11px;
+  background:linear-gradient(155deg, var(--brand) 0%, var(--brand-deep) 100%);
+  display:grid;place-items:center;
+  position:relative;
+  box-shadow:0 1px 0 oklch(40% 0.05 152 / .4) inset, 0 1px 2px oklch(30% 0.02 152 / .25);
+}
+.hdr-mark::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(120% 80% at 30% 20%, oklch(100% 0 0 / .25), transparent 60%);
+  pointer-events:none;
+}
+.hdr-mark span{
+  font-family:'Frank Ruhl Libre',serif;
+  font-weight:700;color:#fff;font-size:21px;line-height:1;
+  letter-spacing:-0.02em;position:relative;z-index:1;
+}
+.hdr-info{flex:1;min-width:0}
+.hdr-org{
+  font-size:15.5px;font-weight:700;color:var(--ink);
+  letter-spacing:-0.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hdr-sub{
+  font-size:11.5px;color:var(--ink-3);margin-top:2px;font-weight:500;
+  display:flex;align-items:center;gap:6px;
+}
+.hdr-sub::before{
+  content:"";width:5px;height:5px;border-radius:50%;
+  background:var(--brand);
+  box-shadow:0 0 0 3px var(--brand-soft);
+}
+.cart-pill{
+  display:flex;align-items:center;gap:6px;
+  background:var(--surface-2);color:var(--ink-2);
+  border:1px solid var(--line);
+  padding:7px 10px 7px 12px;border-radius:999px;
+  font-size:13px;font-weight:600;
+  cursor:default;
+  transition:transform .2s, background .2s, color .2s, border-color .2s;
+  flex-shrink:0;
+}
+.cart-pill svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
+.cart-pill.on{
+  background:var(--brand);color:#fff;border-color:var(--brand);
+  cursor:pointer;
+}
+.cart-pill.on:active{transform:scale(.96)}
+.cart-pill-count{
+  background:rgba(255,255,255,.22);color:#fff;
+  font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;
+  min-width:20px;text-align:center;
+}
+.cart-pill:not(.on) .cart-pill-count{display:none}
+
+.unmatched-box{
+  background:var(--amber-soft);
+  border:1px solid oklch(85% 0.060 80);
+  margin:10px 14px 4px;
+  border-radius:var(--r-lg);
+  overflow:hidden;
+}
+.unmatched-header{
+  font-weight:700;font-size:13px;color:var(--amber-ink);
+  padding:11px 14px 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.unmatched-header svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
+.unmatched-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:9px 14px;
+  border-top:1px solid oklch(88% 0.050 80);
+}
+.unmatched-text{
+  font-size:13px;flex:1;min-width:0;color:var(--ink);font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.unmatched-find-btn{
+  background:#fff;color:var(--amber-ink);
+  border:1px solid oklch(82% 0.060 75);
+  padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;margin-right:10px;
+  transition:background .15s;
+}
+.unmatched-find-btn:active{background:var(--amber-soft)}
+
+.mkt-tabs{
+  background:var(--surface);
+  display:flex;
+  border-bottom:1px solid var(--line);
+  overflow-x:auto;
+  padding:0 8px;
+}
+.mkt-tabs::-webkit-scrollbar{display:none}
+.mkt-tab{
+  padding:13px 14px 12px;text-align:center;
+  font-size:13.5px;font-weight:500;
+  color:var(--ink-3);cursor:pointer;
+  border-bottom:2.5px solid transparent;
+  transition:color .18s, border-color .18s;
+  white-space:nowrap;user-select:none;
+}
+.mkt-tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:700}
+.mkt-tab .tab-dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--amber);margin-left:6px;vertical-align:middle;
+}
+
+.cat-bar{
+  background:var(--bg);
+  padding:11px 14px 12px;
+  display:flex;gap:7px;
+  overflow-x:auto;
+  position:sticky;top:62px;z-index:90;
+  border-bottom:1px solid var(--line);
+}
+.cat-bar::-webkit-scrollbar{display:none}
+.cat-pill{
+  padding:7px 14px;border-radius:999px;
+  border:1px solid var(--line-strong);
+  font-size:12.5px;font-weight:500;
+  white-space:nowrap;cursor:pointer;
+  color:var(--ink-2);background:var(--surface);
+  flex-shrink:0;
+  transition:all .15s;
+  user-select:none;
+}
+.cat-pill:active{transform:scale(.97)}
+.cat-pill.on{
+  background:var(--brand-ink);
+  border-color:var(--brand-ink);
+  color:#fff;font-weight:600;
+}
+
+.sec-title{
+  padding:18px 18px 8px;
+  display:flex;align-items:baseline;gap:8px;
+}
+.sec-title-main{
+  font-size:17px;font-weight:700;color:var(--ink);
+  letter-spacing:-0.01em;
+}
+.sec-title-meta{
+  font-size:11.5px;color:var(--ink-3);font-weight:500;
+}
+
+.pcard{
+  background:var(--surface);
+  margin:0 14px 8px;
+  border-radius:var(--r-lg);
+  display:flex;align-items:center;gap:13px;
+  padding:11px 12px 11px 11px;
+  border:1px solid var(--line);
+  box-shadow:0 1px 0 oklch(94% 0.010 95);
+  animation:slideup .22s cubic-bezier(.2,.8,.2,1) both;
+  transition:border-color .18s, box-shadow .18s;
+}
+.pcard.has-qty{
+  border-color:oklch(85% 0.040 152);
+  box-shadow:0 1px 0 oklch(90% 0.025 152), 0 4px 14px oklch(60% 0.05 152 / .08);
+}
+@keyframes slideup{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.pimg{
+  width:54px;height:54px;border-radius:11px;
+  flex-shrink:0;
+  display:grid;place-items:center;
+  font-family:'Frank Ruhl Libre',serif;
+  font-weight:700;font-size:24px;
+  letter-spacing:-0.02em;
+  position:relative;overflow:hidden;
+}
+.pimg::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid rgba(0,0,0,.04);
+  pointer-events:none;
+}
+.pimg.t-dairy   {background:oklch(96% 0.035 95);  color:oklch(45% 0.080 75)}
+.pimg.t-cheese  {background:oklch(95% 0.045 88);  color:oklch(45% 0.090 70)}
+.pimg.t-soft    {background:oklch(96% 0.025 320); color:oklch(45% 0.080 340)}
+.pimg.t-goat    {background:oklch(95% 0.030 30);  color:oklch(45% 0.090 25)}
+.pimg.t-fresh   {background:oklch(95% 0.035 200); color:oklch(40% 0.080 220)}
+.pimg.t-pasta   {background:oklch(95% 0.040 60);  color:oklch(45% 0.090 55)}
+.pimg.t-sweet   {background:oklch(95% 0.040 350); color:oklch(45% 0.090 350)}
+.pimg.t-spread  {background:oklch(94% 0.045 110); color:oklch(40% 0.080 130)}
+.pimg.t-other   {background:var(--surface-2);     color:var(--ink-2)}
+
+.pinfo{flex:1;min-width:0}
+.pname{
+  font-size:14px;font-weight:500;line-height:1.35;color:var(--ink);
+  text-wrap:pretty;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.pmeta{
+  display:flex;align-items:center;gap:8px;margin-top:4px;
+}
+.psku{
+  font-size:10.5px;color:var(--ink-3);
+  font-family:ui-monospace,'SF Mono',Menlo,monospace;
+  letter-spacing:.02em;
+}
+.tag-suggested{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:600;color:var(--amber-ink);
+  background:var(--amber-soft);
+  padding:2px 7px;border-radius:999px;
+  border:1px solid oklch(88% 0.045 75);
+}
+.tag-suggested::before{
+  content:"";width:5px;height:5px;border-radius:50%;background:var(--amber);
+}
+
+.qty{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.qbtn{
+  width:32px;height:32px;border-radius:9px;
+  border:1px solid var(--line-strong);
+  background:var(--surface);
+  font-size:18px;font-weight:500;line-height:1;
+  display:grid;place-items:center;cursor:pointer;
+  color:var(--ink-2);
+  transition:transform .1s, background .15s, border-color .15s, color .15s;
+  user-select:none;
+  font-family:inherit;
+}
+.qbtn:active{transform:scale(.9)}
+.qbtn.plus.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.qbtn.plus.on:active{background:var(--brand-deep)}
+.qbtn.minus{opacity:.3;pointer-events:none}
+.qbtn.minus.on{opacity:1;pointer-events:auto}
+.qnum{
+  font-size:15px;font-weight:700;min-width:24px;text-align:center;
+  color:var(--ink);font-variant-numeric:tabular-nums;
+}
+.qnum.z{color:var(--ink-4);font-weight:500}
+
+.add-all-favs-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:calc(100% - 28px);
+  margin:14px 14px 6px;
+  padding:14px;
+  background:var(--brand);
+  border:none;border-radius:var(--r-lg);
+  color:#fff;
+  font-size:14px;font-weight:600;
+  cursor:pointer;
+  transition:transform .12s, background .15s;
+  box-shadow:0 1px 0 var(--brand-deep) inset, 0 4px 12px oklch(45% 0.05 152 / .25);
+}
+.add-all-favs-btn:active{transform:scale(.99);background:var(--brand-deep)}
+.add-all-favs-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+
+.fav-section{margin-top:6px}
+.fav-section-title{
+  padding:14px 18px 8px;
+  font-size:11px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.08em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.fav-section-title::after{
+  content:"";flex:1;height:1px;background:var(--line);
+}
+
+#catalog-view{padding-bottom:96px}
+#cart-view{padding-bottom:160px}
+
+.cart-header{
+  background:var(--surface);
+  padding:14px 18px;
+  display:flex;align-items:center;gap:14px;
+  border-bottom:1px solid var(--line);
+  position:sticky;top:62px;z-index:90;
+}
+.cart-back-btn{
+  background:none;border:none;
+  font-size:13.5px;color:var(--brand-ink);
+  cursor:pointer;font-weight:600;
+  display:flex;align-items:center;gap:4px;
+  padding:4px 0;
+}
+.cart-title{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.01em}
+.cart-summary{
+  margin-right:auto;
+  font-size:12px;color:var(--ink-3);font-weight:500;
+  font-variant-numeric:tabular-nums;
+}
+
+.cart-section{margin-top:14px}
+.cart-section-title{
+  padding:8px 18px;
+  font-size:11px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.08em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.cart-section-title::after{
+  content:"";flex:1;height:1px;background:var(--line);
+}
+.cart-row{
+  background:var(--surface);
+  margin:0 14px 6px;
+  border-radius:var(--r);
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 12px;
+  border:1px solid var(--line);
+}
+.cart-row-info{flex:1;min-width:0}
+.cart-row-name{font-size:13.5px;font-weight:500;color:var(--ink)}
+.cart-row-code{
+  font-size:10.5px;color:var(--ink-3);margin-top:2px;
+  font-family:ui-monospace,'SF Mono',Menlo,monospace;
+}
+.cart-row-controls{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.remove-btn{
+  background:none;border:none;color:var(--ink-4);
+  font-size:18px;cursor:pointer;
+  padding:6px;line-height:1;margin-right:4px;
+  border-radius:8px;
+  transition:color .15s, background .15s;
+}
+.remove-btn:hover{color:var(--danger);background:oklch(96% 0.025 25)}
+
+.empty-cart{
+  text-align:center;padding:80px 24px;color:var(--ink-3);
+}
+.empty-cart-icon{
+  width:60px;height:60px;border-radius:50%;
+  background:var(--surface-2);
+  display:grid;place-items:center;
+  margin:0 auto 14px;
+}
+.empty-cart-icon svg{width:26px;height:26px;stroke:var(--ink-4);fill:none;stroke-width:1.6}
+.empty-cart-text{font-size:14px;font-weight:500;color:var(--ink-2)}
+.empty-cart-sub{font-size:12px;color:var(--ink-3);margin-top:6px}
+
+.cart-bottom{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--surface);
+  border-top:1px solid var(--line);
+  padding:12px 14px 16px;z-index:200;
+  box-shadow:0 -4px 20px oklch(40% 0.02 95 / .06);
+}
+.cart-reset-btn{
+  width:100%;padding:11px;
+  background:none;
+  border:1px solid var(--line-strong);
+  border-radius:var(--r);
+  color:var(--ink-2);font-size:13px;font-weight:500;
+  cursor:pointer;margin-bottom:8px;
+  transition:background .15s;
+}
+.cart-reset-btn:active{background:var(--surface-2)}
+
+.cart-send-btn{
+  width:100%;padding:15px;
+  border-radius:var(--r);
+  background:var(--brand);
+  border:none;color:#fff;
+  font-size:15px;font-weight:700;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  letter-spacing:-0.01em;
+  box-shadow:0 1px 0 var(--brand-deep) inset, 0 6px 18px oklch(45% 0.05 152 / .28);
+  transition:transform .12s, background .15s;
+}
+.cart-send-btn:active{transform:scale(.99);background:var(--brand-deep)}
+.cart-send-btn:disabled{
+  background:var(--surface-2);color:var(--ink-4);
+  cursor:default;box-shadow:none;
+}
+.cart-send-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8}
+
+.footer{
+  position:fixed;bottom:0;left:0;right:0;
+  background:linear-gradient(to top, var(--bg) 0%, var(--bg) 70%, transparent 100%);
+  padding:18px 14px 16px;z-index:200;
+}
+.footer-btn{
+  width:100%;padding:15px 18px;
+  border-radius:var(--r);
+  background:var(--brand);
+  border:none;color:#fff;
+  font-size:14.5px;font-weight:600;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;
+  letter-spacing:-0.005em;
+  box-shadow:0 1px 0 var(--brand-deep) inset, 0 6px 18px oklch(45% 0.05 152 / .28);
+  transition:transform .12s, background .15s;
+}
+.footer-btn:active{transform:scale(.99);background:var(--brand-deep)}
+.footer-btn:disabled{
+  background:var(--surface);color:var(--ink-3);
+  cursor:default;box-shadow:none;
+  border:1px solid var(--line);
+  justify-content:center;font-weight:500;
+}
+.footer-btn-left{display:flex;align-items:center;gap:10px}
+.footer-btn-count{
+  background:rgba(255,255,255,.2);
+  padding:2px 9px;border-radius:999px;
+  font-size:12px;font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+.footer-btn-arrow{font-size:17px;line-height:1}
+
+.modal{
+  position:fixed;inset:0;
+  background:oklch(20% 0.02 95 / .55);
+  display:flex;align-items:flex-end;justify-content:center;
+  z-index:1000;
+  animation:fadeIn .2s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-content{
+  background:var(--surface);
+  border-radius:22px 22px 0 0;
+  width:100%;max-width:520px;max-height:80vh;overflow-y:auto;
+  padding:18px 18px 28px;
+  position:relative;
+  box-shadow:0 12px 40px oklch(30% 0.030 95 / .18);
+  animation:slideUp .25s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes slideUp{from{transform:translateY(40px)}to{transform:translateY(0)}}
+.modal-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:var(--line-strong);
+  margin:0 auto 14px;
+}
+.modal-title{
+  font-weight:700;font-size:15px;
+  margin-bottom:12px;color:var(--ink);
+  padding-left:36px;letter-spacing:-0.01em;
+}
+.modal-close{
+  position:absolute;top:18px;left:14px;
+  background:var(--surface-2);border:none;
+  width:30px;height:30px;border-radius:50%;
+  font-size:18px;cursor:pointer;color:var(--ink-2);
+  display:grid;place-items:center;line-height:1;
+}
+.suggestion-row{
+  padding:12px;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+  border-radius:10px;
+  transition:background .12s;
+  display:flex;align-items:center;gap:12px;
+}
+.suggestion-row:active{background:var(--brand-soft)}
+.suggestion-row:last-child{border-bottom:none}
+.suggestion-pimg{
+  width:38px;height:38px;border-radius:9px;
+  background:var(--surface-2);
+  display:grid;place-items:center;
+  font-family:'Frank Ruhl Libre',serif;font-weight:700;
+  font-size:18px;color:var(--ink-2);
+  flex-shrink:0;
+}
+.suggestion-text{flex:1;min-width:0}
+.suggestion-name{font-size:14px;font-weight:500;color:var(--ink)}
+.suggestion-meta{
+  font-size:10.5px;color:var(--ink-3);margin-top:2px;
+  font-family:ui-monospace,'SF Mono',Menlo,monospace;
+}
+.suggestion-arrow{color:var(--ink-4);font-size:20px}
+.no-suggestions{text-align:center;padding:28px;color:var(--ink-3);font-size:13px}
+
+.loading{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:55vh;gap:16px;color:var(--ink-3);font-size:13px;
+}
+.spinner{
+  width:30px;height:30px;
+  border:2.5px solid var(--line);
+  border-top-color:var(--brand);
+  border-radius:50%;animation:spin .75s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:48px 24px;color:var(--ink-3);font-size:13.5px}
+.empty .ei{
+  width:54px;height:54px;border-radius:50%;
+  background:var(--surface-2);
+  display:grid;place-items:center;
+  margin:0 auto 12px;
+}
+.empty .ei svg{width:24px;height:24px;stroke:var(--ink-4);fill:none;stroke-width:1.6}
+.err{text-align:center;padding:48px 24px;color:var(--danger);font-size:13.5px}
+.err .ei{font-size:28px;margin-bottom:10px}
+
+.toast{
+  position:fixed;bottom:108px;left:50%;
+  transform:translateX(-50%) translateY(12px);
+  background:var(--ink);color:#fff;
+  padding:10px 18px;border-radius:999px;
+  font-size:12.5px;font-weight:500;
+  opacity:0;transition:all .22s cubic-bezier(.2,.8,.2,1);
+  pointer-events:none;white-space:nowrap;z-index:300;
+  box-shadow:0 8px 24px oklch(20% 0.02 95 / .25);
+  display:flex;align-items:center;gap:8px;
+}
+.toast::before{
+  content:"";width:6px;height:6px;border-radius:50%;
+  background:var(--brand);
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-mark" aria-hidden="true"><span id="hdr-mark-letter">·</span></div>
+  <div class="hdr-info">
+    <div class="hdr-org" id="org-name">טוען...</div>
+    <div class="hdr-sub">הזמנה חדשה</div>
+  </div>
+  <div class="cart-pill" id="badge" onclick="if(Object.keys(qty).length)switchView('cart')">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 6z" stroke-linejoin="round"></path><path d="M8 6V4a4 4 0 0 1 8 0v2"></path></svg>
+    <span class="cart-pill-count" id="badge-count">0</span>
+  </div>
+</div>
+
+<div id="unmatched-box" class="unmatched-box hidden"></div>
+
+<div id="catalog-view">
+  <div id="mkt-tabs" class="mkt-tabs"></div>
+  <div id="cat-bar" class="cat-bar"></div>
+  <div id="plist"></div>
+</div>
+
+<div id="cart-view" class="hidden">
+  <div class="cart-header">
+    <button class="cart-back-btn" onclick="switchView('catalog')">
+      <span style="font-size:18px;line-height:1">←</span> חזור לקטלוג
+    </button>
+    <span class="cart-title">העגלה שלי</span>
+    <span class="cart-summary" id="cart-summary"></span>
+  </div>
+  <div id="cart-items"></div>
+  <div class="cart-bottom" id="cart-bottom">
+    <button class="cart-reset-btn" onclick="clearCart()">אפס סל</button>
+    <button class="cart-send-btn" id="cart-send-btn" onclick="sendOrder()" disabled>
+      <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linejoin="round" stroke-linecap="round"></path></svg>
+      שלח הזמנה
+    </button>
+  </div>
+</div>
+
+<div class="footer" id="sticky-footer">
+  <button class="footer-btn" id="footer-btn" onclick="switchView('cart')" disabled>
+    בחר מוצרים להזמנה
+  </button>
+</div>
+
+<div id="unmatched-modal" class="modal hidden" onclick="if(event.target===this)closeUnmatchedModal()">
+  <div class="modal-content">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeUnmatchedModal()">×</button>
+    <div class="modal-title" id="modal-title"></div>
+    <div id="suggestions-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CAT_TINT = {
+  MOZZARELLA:'t-cheese', WHITE_BRINE:'t-cheese', HARD_CHEESE:'t-cheese',
+  CREAM_CHEESE:'t-soft', RICOTTA:'t-soft', HALLOUMI:'t-pasta',
+  GOAT_SHEEP:'t-goat',
+  CREAM:'t-dairy', YOGURT:'t-dairy', MILK:'t-fresh', BUTTER:'t-pasta',
+  DESSERTS:'t-sweet',
+  PASTA:'t-pasta',
+  SPREADS:'t-spread',
+  OTHER:'t-other'
+};
+
+// Point each deployed page at its matching backend by hostname.
+// order-dev.ordexai.com → dev API; everything else (order.ordexai.com) → prod API.
+const API = location.hostname === 'order-dev.ordexai.com'
+  ? 'https://9q6xovizff.execute-api.eu-west-1.amazonaws.com'   // dev
+  : 'https://nbe30y2d7e.execute-api.eu-west-1.amazonaws.com';  // prod
+
+let catalog = null;
+let qty = {};
+let activeTab = null;
+let activeCat = null;
+let activeView = 'catalog';
+let unmatchedItems = [];
+
+async function init() {
+  showLoading();
+  const token = new URLSearchParams(location.search).get('t');
+
+  if (!token) { showError('קישור לא תקין — חסר מזהה'); return; }
+
+  try {
+    const r = await fetch(API + '/catalog?token=' + encodeURIComponent(token));
+    if (r.status === 401) { showError('הקישור פג תוקף — בקש קישור חדש'); return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    catalog = await r.json();
+  } catch (e) {
+    showError('שגיאה בטעינת הקטלוג. בדוק חיבור או נסה שוב.');
+    console.error(e);
+    return;
+  }
+
+  unmatchedItems = [...(catalog.unmatchedItems || [])];
+
+  if (catalog.existingOrder) {
+    catalog.existingOrder.forEach(item => { qty[item.sku_code] = item.quantity; });
+  }
+
+  const hasFavorites = catalog.favorites && catalog.favorites.length > 0;
+  const hasSession = catalog.existingOrder !== null;
+
+  if (hasSession && catalog.existingOrder.length > 0) {
+    activeTab = catalog.existingOrder[0].market_type_id;
+  } else if (hasFavorites) {
+    activeTab = 'favorites';
+  } else {
+    activeTab = catalog.marketTypes[0]?.id;
+  }
+
+  document.getElementById('org-name').textContent = catalog.org.name;
+  document.getElementById('hdr-mark-letter').textContent = (catalog.org.name || 'ר')[0];
+  document.title = 'הזמנה — ' + catalog.org.name;
+
+  renderUnmatched();
+  renderTabs();
+  renderContent();
+  updateFooter();
+}
+
+function findSku(code) {
+  let s = catalog.skus.find(s => s.sku_code === code);
+  if (s) return s;
+  s = catalog.favorites?.find(f => f.sku_code === code);
+  if (s) return s;
+  s = catalog.existingOrder?.find(e => e.sku_code === code);
+  if (s) return s;
+  return { sku_code: code, name: code, market_type_id: null };
+}
+
+function renderTabs() {
+  const container = document.getElementById('mkt-tabs');
+  container.innerHTML = '';
+
+  const hasFavorites = catalog.favorites && catalog.favorites.length > 0;
+  if (hasFavorites) {
+    const tab = document.createElement('div');
+    tab.className = 'mkt-tab' + (activeTab === 'favorites' ? ' on' : '');
+    tab.innerHTML = 'קבועים<span class="tab-dot"></span>';
+    tab.dataset.id = 'favorites';
+    tab.onclick = () => switchTab('favorites');
+    container.appendChild(tab);
+  }
+
+  catalog.marketTypes.forEach(mt => {
+    const tab = document.createElement('div');
+    tab.className = 'mkt-tab' + (activeTab === mt.id ? ' on' : '');
+    tab.textContent = mt.name;
+    tab.dataset.id = mt.id;
+    tab.onclick = () => switchTab(mt.id);
+    container.appendChild(tab);
+  });
+}
+
+function switchTab(tabId) {
+  activeTab = tabId;
+  activeCat = null;
+  document.querySelectorAll('.mkt-tab').forEach(t =>
+    t.classList.toggle('on', t.dataset.id === String(tabId))
+  );
+  renderContent();
+}
+
+function renderContent() {
+  const catBar = document.getElementById('cat-bar');
+  if (activeTab === 'favorites') {
+    catBar.innerHTML = '';
+    catBar.style.display = 'none';
+    renderFavoritesTab();
+  } else {
+    catBar.style.display = '';
+    renderCategoryBar();
+    renderMarketTab();
+  }
+}
+
+function renderCategoryBar() {
+  const bar = document.getElementById('cat-bar');
+  const skusInMarket = catalog.skus.filter(s => s.market_type_id === activeTab);
+  const catIds = [...new Set(skusInMarket.map(s => s.category_id))];
+  const cats = catalog.categories.filter(c => catIds.includes(c.id));
+
+  bar.innerHTML = '';
+  if (!cats.length) { activeCat = null; return; }
+
+  if (!activeCat || !catIds.includes(activeCat)) activeCat = cats[0].id;
+
+  cats.forEach(cat => {
+    const pill = document.createElement('div');
+    pill.className = 'cat-pill' + (activeCat === cat.id ? ' on' : '');
+    pill.textContent = cat.name || cat.code;
+    pill.dataset.id = cat.id;
+    pill.onclick = () => {
+      activeCat = cat.id;
+      document.querySelectorAll('.cat-pill').forEach(p =>
+        p.classList.toggle('on', p.dataset.id === cat.id)
+      );
+      renderMarketTab();
+    };
+    bar.appendChild(pill);
+  });
+}
+
+function renderMarketTab() {
+  const list = document.getElementById('plist');
+  const skus = catalog.skus.filter(s =>
+    s.market_type_id === activeTab && s.category_id === activeCat
+  );
+
+  if (!skus.length) {
+    list.innerHTML = '<div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div>אין מוצרים בקטגוריה זו</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  const mt = catalog.marketTypes.find(m => m.id === activeTab);
+  const cat = catalog.categories.find(c => c.id === activeCat);
+
+  const title = document.createElement('div');
+  title.className = 'sec-title';
+  title.innerHTML =
+    '<span class="sec-title-main">' + (cat?.name || '') + '</span>' +
+    '<span class="sec-title-meta">' + (mt?.name || '') + ' · ' + skus.length + ' מוצרים</span>';
+  list.appendChild(title);
+
+  skus.forEach((sku, idx) => {
+    list.appendChild(createProductCard(sku.sku_code, sku.name, idx));
+  });
+}
+
+function renderFavoritesTab() {
+  const list = document.getElementById('plist');
+  list.innerHTML = '';
+  const hasSession = catalog.existingOrder !== null;
+
+  if (!hasSession) {
+    const btn = document.createElement('button');
+    btn.className = 'add-all-favs-btn';
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>אמץ כמויות מוצעות';
+    btn.onclick = adoptSuggestedQuantities;
+    list.appendChild(btn);
+  }
+
+  const grouped = {};
+  catalog.favorites.forEach(fav => {
+    const mtId = fav.market_type_id;
+    if (!grouped[mtId]) grouped[mtId] = [];
+    grouped[mtId].push(fav);
+  });
+
+  Object.entries(grouped).forEach(([mtId, favs]) => {
+    const mt = catalog.marketTypes.find(m => m.id === mtId);
+    const section = document.createElement('div');
+    section.className = 'fav-section';
+
+    const title = document.createElement('div');
+    title.className = 'fav-section-title';
+    title.textContent = (mt?.name || 'אחר') + ' · ' + favs.length + ' מוצרים';
+    section.appendChild(title);
+
+    favs.forEach((fav, idx) => {
+      const sugQty = hasSession ? null : fav.suggested_qty;
+      section.appendChild(createProductCard(fav.sku_code, fav.name, idx, sugQty));
+    });
+
+    list.appendChild(section);
+  });
+}
+
+function createProductCard(skuCode, name, idx, suggestedQty) {
+  const q = qty[skuCode] || 0;
+  const card = document.createElement('div');
+  card.className = 'pcard' + (q > 0 ? ' has-qty' : '');
+  card.style.animationDelay = (Math.min(idx, 12) * 22) + 'ms';
+  card.dataset.code = skuCode;
+
+  const sku = catalog.skus.find(s => s.sku_code === skuCode);
+  const cat = sku ? catalog.categories.find(c => c.id === sku.category_id) : null;
+  const tint = (cat && CAT_TINT[cat.code]) || 't-other';
+  const initial = (name || '?').trim()[0] || '·';
+
+  const safeCode = skuCode.replace(/'/g, "\\'");
+  const sugHtml = (suggestedQty && q === 0)
+    ? '<span class="tag-suggested">מוצע ' + suggestedQty + '</span>'
+    : '';
+
+  card.innerHTML =
+    '<div class="pimg ' + tint + '">' + escapeHtml(initial) + '</div>' +
+    '<div class="pinfo">' +
+      '<div class="pname">' + escapeHtml(name) + '</div>' +
+      '<div class="pmeta">' +
+        '<span class="psku">' + escapeHtml(skuCode) + '</span>' +
+        sugHtml +
+      '</div>' +
+    '</div>' +
+    '<div class="qty">' +
+      '<button class="qbtn minus' + (q > 0 ? ' on' : '') + '" onclick="chg(\'' + safeCode + '\',-1)" aria-label="הפחת">−</button>' +
+      '<span class="qnum' + (q === 0 ? ' z' : '') + '" id="q' + skuCode + '">' + q + '</span>' +
+      '<button class="qbtn plus' + (q > 0 ? ' on' : '') + '" onclick="chg(\'' + safeCode + '\',1)" aria-label="הוסף">+</button>' +
+    '</div>';
+
+  return card;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function chg(code, delta) {
+  const cur = qty[code] || 0;
+  const next = Math.max(0, cur + delta);
+  if (next === 0) delete qty[code]; else qty[code] = next;
+
+  const el = document.getElementById('q' + code);
+  if (el) {
+    el.textContent = next;
+    el.className = 'qnum' + (next === 0 ? ' z' : '');
+    const ctrl = el.parentElement;
+    ctrl.querySelector('.minus').className = 'qbtn minus' + (next > 0 ? ' on' : '');
+    ctrl.querySelector('.plus').className  = 'qbtn plus'  + (next > 0 ? ' on' : '');
+    const card = ctrl.closest('.pcard');
+    if (card) card.classList.toggle('has-qty', next > 0);
+  }
+
+  updateFooter();
+  if (activeView === 'cart') renderCart();
+  if (delta > 0 && next > 0) toast(findSku(code).name + ' × ' + next);
+}
+
+function adoptSuggestedQuantities() {
+  catalog.favorites.forEach(fav => { qty[fav.sku_code] = fav.suggested_qty; });
+  updateFooter();
+  renderContent();
+  toast('אומצו הכמויות המוצעות');
+}
+
+function switchView(view) {
+  activeView = view;
+  document.getElementById('catalog-view').classList.toggle('hidden', view !== 'catalog');
+  document.getElementById('cart-view').classList.toggle('hidden', view !== 'cart');
+  document.getElementById('sticky-footer').classList.toggle('hidden', view !== 'catalog');
+  document.getElementById('cart-bottom').classList.toggle('hidden', view !== 'cart');
+
+  const box = document.getElementById('unmatched-box');
+  if (unmatchedItems.length === 0) {
+    box.classList.add('hidden');
+  } else {
+    box.classList.toggle('hidden', view !== 'catalog');
+  }
+
+  if (view === 'cart') renderCart();
+  if (view === 'catalog') renderContent();
+  window.scrollTo(0, 0);
+}
+
+function renderCart() {
+  const list = document.getElementById('cart-items');
+  list.innerHTML = '';
+
+  const items = Object.entries(qty).filter(([_, q]) => q > 0);
+  const summary = document.getElementById('cart-summary');
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="empty-cart"><div class="empty-cart-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 6z" stroke-linejoin="round"></path><path d="M8 6V4a4 4 0 0 1 8 0v2"></path></svg></div><div class="empty-cart-text">העגלה ריקה</div><div class="empty-cart-sub">חזור לקטלוג כדי להוסיף מוצרים</div></div>';
+    document.getElementById('cart-send-btn').disabled = true;
+    summary.textContent = '';
+    return;
+  }
+
+  document.getElementById('cart-send-btn').disabled = false;
+  const units = items.reduce((a, [_, q]) => a + q, 0);
+  summary.textContent = items.length + ' פריטים · ' + units + ' יחידות';
+
+  const grouped = {};
+  items.forEach(([code, q]) => {
+    const info = findSku(code);
+    const mt = catalog.marketTypes.find(m => m.id === info.market_type_id);
+    const key = mt?.name || 'אחר';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push({ code, qty: q, name: info.name });
+  });
+
+  Object.entries(grouped).forEach(([mtName, groupItems]) => {
+    const section = document.createElement('div');
+    section.className = 'cart-section';
+
+    const title = document.createElement('div');
+    title.className = 'cart-section-title';
+    title.textContent = mtName + ' · ' + groupItems.length;
+    section.appendChild(title);
+
+    groupItems.forEach(({ code, qty: q, name }) => {
+      const safeCode = code.replace(/'/g, "\\'");
+      const row = document.createElement('div');
+      row.className = 'cart-row';
+      row.innerHTML =
+        '<div class="cart-row-info">' +
+          '<div class="cart-row-name">' + escapeHtml(name) + '</div>' +
+          '<div class="cart-row-code">' + escapeHtml(code) + '</div>' +
+        '</div>' +
+        '<div class="cart-row-controls">' +
+          '<button class="qbtn minus on" onclick="chg(\'' + safeCode + '\',-1)">−</button>' +
+          '<span class="qnum">' + q + '</span>' +
+          '<button class="qbtn plus on" onclick="chg(\'' + safeCode + '\',1)">+</button>' +
+          '<button class="remove-btn" onclick="removeFromCart(\'' + safeCode + '\')" aria-label="הסר">×</button>' +
+        '</div>';
+      section.appendChild(row);
+    });
+
+    list.appendChild(section);
+  });
+}
+
+function removeFromCart(code) {
+  delete qty[code];
+  renderCart();
+  updateFooter();
+}
+
+function clearCart() {
+  qty = {};
+  renderCart();
+  updateFooter();
+}
+
+function sendOrder() {
+  const items = Object.entries(qty).filter(([_, q]) => q > 0);
+  if (items.length === 0) return;
+  const lines = items.map(([code, q]) => code + ' X ' + q);
+  const text = '🌐 הזמנה מ-OrdexAI\n' + lines.join('\n');
+  const phone = (catalog.distributorPhone || '').replace(/\D/g, '');
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(text), '_blank');
+}
+
+function renderUnmatched() {
+  const box = document.getElementById('unmatched-box');
+  if (!unmatchedItems || unmatchedItems.length === 0) {
+    box.classList.add('hidden');
+    return;
+  }
+
+  box.classList.remove('hidden');
+  box.innerHTML =
+    '<div class="unmatched-header">' +
+      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01" stroke-linecap="round"></path></svg>' +
+      'פריטים שלא זוהו · ' + unmatchedItems.length +
+    '</div>';
+
+  unmatchedItems.forEach(function(item, idx) {
+    const row = document.createElement('div');
+    row.className = 'unmatched-row';
+
+    const text = document.createElement('span');
+    text.className = 'unmatched-text';
+    text.textContent = item.text;
+    row.appendChild(text);
+
+    const btn = document.createElement('button');
+    btn.className = 'unmatched-find-btn';
+    btn.textContent = 'מצא בקטלוג';
+    btn.onclick = function() { openUnmatchedModal(idx); };
+    row.appendChild(btn);
+
+    box.appendChild(row);
+  });
+}
+
+function openUnmatchedModal(idx) {
+  const item = unmatchedItems[idx];
+  const modal = document.getElementById('unmatched-modal');
+  document.getElementById('modal-title').textContent = 'הצעות עבור "' + item.text + '"';
+
+  const list = document.getElementById('suggestions-list');
+  list.innerHTML = '';
+
+  if (!item.suggestions || item.suggestions.length === 0) {
+    list.innerHTML = '<div class="no-suggestions">לא נמצאו הצעות מתאימות</div>';
+  } else {
+    item.suggestions.forEach(function(sug) {
+      const row = document.createElement('div');
+      row.className = 'suggestion-row';
+      const initial = (sug.name || '?').trim()[0] || '·';
+      row.innerHTML =
+        '<div class="suggestion-pimg">' + escapeHtml(initial) + '</div>' +
+        '<div class="suggestion-text">' +
+          '<div class="suggestion-name">' + escapeHtml(sug.name) + '</div>' +
+          '<div class="suggestion-meta">' + escapeHtml(sug.sku_code) + '</div>' +
+        '</div>' +
+        '<span class="suggestion-arrow">←</span>';
+      row.onclick = function() { pickSuggestion(idx, sug); };
+      list.appendChild(row);
+    });
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeUnmatchedModal() {
+  document.getElementById('unmatched-modal').classList.add('hidden');
+}
+
+function pickSuggestion(unmatchedIdx, sug) {
+  qty[sug.sku_code] = (qty[sug.sku_code] || 0) + 1;
+  unmatchedItems.splice(unmatchedIdx, 1);
+  renderUnmatched();
+  renderContent();
+  updateFooter();
+  closeUnmatchedModal();
+  toast(sug.name + ' נוסף לסל');
+}
+
+function updateFooter() {
+  const n = Object.keys(qty).length;
+  const units = Object.values(qty).reduce((a, b) => a + b, 0);
+
+  const badge = document.getElementById('badge');
+  document.getElementById('badge-count').textContent = n;
+  badge.classList.toggle('on', n > 0);
+
+  const btn = document.getElementById('footer-btn');
+  btn.disabled = n === 0;
+  if (n === 0) {
+    btn.textContent = 'בחר מוצרים להזמנה';
+  } else {
+    btn.innerHTML =
+      '<span class="footer-btn-left">' +
+        '<span class="footer-btn-count">' + n + '</span>' +
+        'עבור לעגלה · ' + units + ' יחידות' +
+      '</span>' +
+      '<span class="footer-btn-arrow">←</span>';
+  }
+}
+
+function showLoading() {
+  document.getElementById('plist').innerHTML =
+    '<div class="loading"><div class="spinner"></div>טוען קטלוג...</div>';
+}
+function showError(msg) {
+  document.getElementById('org-name').textContent = 'שגיאה';
+  document.getElementById('plist').innerHTML =
+    '<div class="err"><div class="ei">⚠</div>' + msg + '</div>';
+}
+let toastT;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('on'), 1800);
+}
+
+init();
+</script>
+</body>
+</html>
