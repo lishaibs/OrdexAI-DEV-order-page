@@ -689,6 +689,12 @@ async function init() {
   renderTabs();
   renderContent();
   updateFooter();
+
+  // Editing an existing order (token carries a session id) → open straight to the cart so the
+  // customer immediately sees the already-ordered items to review/change.
+  if (catalog.sessionId && catalog.existingOrder && catalog.existingOrder.length > 0) {
+    switchView('cart');
+  }
 }
 
 function findSku(code) {
