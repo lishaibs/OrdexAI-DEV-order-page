@@ -996,15 +996,37 @@ function clearCart() {
   updateFooter();
 }
 
-function sendOrder() {
-  const items = Object.entries(qty).filter(([_, q]) => q > 0);
-  if (items.length === 0) return;
-  const lines = items.map(([code, q]) => code + ' X ' + q);
-  // Echo the edited session id back so the backend replaces THIS exact order (no doubling).
-  const sidLine = catalog.sessionId ? 'SID:' + catalog.sessionId + '\n' : '';
-  const text = '🌐 הזמנה מ-OrdexAI\n' + sidLine + lines.join('\n');
+async function sendOrder() {
+  const entries = Object.entries(qty).filter(([_, q]) => q > 0);
+  if (entries.length === 0) return;
+  const items = entries.map(([sku_code, quantity]) => ({ sku_code, quantity }));
+
+  const btn = document.getElementById('cart-send-btn');
+  if (btn) btn.disabled = true;
+
+  // Apply the order DIRECTLY via the signed API (cart only — no SKU numbers in the wa.me text).
+  // The catalog token (loaded in the URL) carries org/contact/distributor/edited-session; the
+  // backend trusts only that, never the body. A client request id makes the submit idempotent.
+  const token = new URLSearchParams(location.search).get('t');
+  const clientRequestId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+
+  try {
+    const r = await fetch(API + '/web-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ items, clientRequestId })
+    });
+    if (r.status === 401) { showError('הקישור פג תוקף — בקש קישור חדש'); return; }
+    if (!r.ok) { alert('שגיאה בשליחת ההזמנה, נסה שוב'); if (btn) btn.disabled = false; return; }
+  } catch (e) {
+    console.error(e);
+    alert('שגיאת רשת, נסה שוב'); if (btn) btn.disabled = false; return;
+  }
+
+  // Order is applied. Open wa.me with ONLY the short, backend-localized ack (no order data).
   const phone = (catalog.distributorPhone || '').replace(/\D/g, '');
-  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(text), '_blank');
+  const ack = (catalog.ackMarker || '🌐✅') + ' ' + (catalog.ackText || '');
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(ack), '_blank');
 }
 
 function renderUnmatched() {
