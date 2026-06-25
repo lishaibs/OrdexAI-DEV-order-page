@@ -995,7 +995,9 @@ function sendOrder() {
   const items = Object.entries(qty).filter(([_, q]) => q > 0);
   if (items.length === 0) return;
   const lines = items.map(([code, q]) => code + ' X ' + q);
-  const text = '🌐 הזמנה מ-OrdexAI\n' + lines.join('\n');
+  // Echo the edited session id back so the backend replaces THIS exact order (no doubling).
+  const sidLine = catalog.sessionId ? 'SID:' + catalog.sessionId + '\n' : '';
+  const text = '🌐 הזמנה מ-OrdexAI\n' + sidLine + lines.join('\n');
   const phone = (catalog.distributorPhone || '').replace(/\D/g, '');
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(text), '_blank');
 }
