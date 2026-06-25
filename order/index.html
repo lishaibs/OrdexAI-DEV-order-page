@@ -661,6 +661,11 @@ async function init() {
 
   unmatchedItems = [...(catalog.unmatchedItems || [])];
 
+  // Favourites tab: show items with the highest suggested quantity first.
+  if (Array.isArray(catalog.favorites)) {
+    catalog.favorites.sort((a, b) => (b.suggested_qty || 0) - (a.suggested_qty || 0));
+  }
+
   if (catalog.existingOrder) {
     catalog.existingOrder.forEach(item => { qty[item.sku_code] = item.quantity; });
   }
