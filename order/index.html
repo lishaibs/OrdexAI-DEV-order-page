@@ -531,6 +531,14 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   border-radius:50%;animation:spin .75s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+.posting-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(255,255,255,.93);backdrop-filter:blur(3px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  color:var(--ink-2);font-size:15px;font-weight:600;text-align:center;padding:0 32px;
+}
+.posting-overlay.hidden{display:none}
+.posting-overlay .spinner{width:38px;height:38px;border-width:3px}
 .empty{text-align:center;padding:48px 24px;color:var(--ink-3);font-size:13.5px}
 .empty .ei{
   width:54px;height:54px;border-radius:50%;
@@ -613,6 +621,11 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
     <div class="modal-title" id="modal-title"></div>
     <div id="suggestions-list"></div>
   </div>
+</div>
+
+<div class="posting-overlay hidden" id="posting-overlay">
+  <div class="spinner"></div>
+  <span id="posting-text">שולח את ההזמנה...</span>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -705,6 +718,14 @@ function findSku(code) {
   s = catalog.existingOrder?.find(e => e.sku_code === code);
   if (s) return s;
   return { sku_code: code, name: code, market_type_id: null };
+}
+
+// Generic market-type label resolver: market_type_id -> localized market name (e.g. מדף / מעדניה).
+// String-compared so it is robust to id type. Used wherever a product needs its market shown.
+function marketName(marketTypeId) {
+  if (!marketTypeId) return '';
+  const mt = catalog.marketTypes.find(m => String(m.id) === String(marketTypeId));
+  return mt ? mt.name : '';
 }
 
 function renderTabs() {
@@ -1002,6 +1023,11 @@ function clearCart() {
   updateFooter();
 }
 
+// Stable across retries: generated once per submit-intent and REUSED if the customer retries
+// after a slow/failed attempt, so the backend dedupes. Cleared only on success → a later,
+// genuinely-new order gets a fresh id.
+let pendingRequestId = null;
+
 async function sendOrder() {
   const entries = Object.entries(qty).filter(([_, q]) => q > 0);
   if (entries.length === 0) return;
@@ -1009,30 +1035,45 @@ async function sendOrder() {
 
   const btn = document.getElementById('cart-send-btn');
   if (btn) btn.disabled = true;
+  showPosting('שולח את ההזמנה...');
 
-  // Apply the order DIRECTLY via the signed API (cart only — no SKU numbers in the wa.me text).
-  // The catalog token (loaded in the URL) carries org/contact/distributor/edited-session; the
-  // backend trusts only that, never the body. A client request id makes the submit idempotent.
+  // Apply the order DIRECTLY via the signed API (cart only). The catalog token (in the URL) carries
+  // org/contact/distributor/edited-session; the backend trusts only that, never the body.
   const token = new URLSearchParams(location.search).get('t');
-  const clientRequestId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random();
+  if (!pendingRequestId) {
+    pendingRequestId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random();
+  }
 
   try {
     const r = await fetch(API + '/web-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ items, clientRequestId })
+      body: JSON.stringify({ items, clientRequestId: pendingRequestId })
     });
-    if (r.status === 401) { showError('הקישור פג תוקף — בקש קישור חדש'); return; }
-    if (!r.ok) { alert('שגיאה בשליחת ההזמנה, נסה שוב'); if (btn) btn.disabled = false; return; }
+    if (r.status === 401) { hidePosting(); showError('הקישור פג תוקף — בקש קישור חדש'); return; }
+    if (!r.ok) { hidePosting(); alert('שגיאה בשליחת ההזמנה, נסה שוב'); if (btn) btn.disabled = false; return; }
   } catch (e) {
     console.error(e);
+    hidePosting();
     alert('שגיאת רשת, נסה שוב'); if (btn) btn.disabled = false; return;
   }
 
-  // Order is applied. Open wa.me with ONLY the short, backend-localized ack (no order data).
+  // Success: the order is applied AND the bot has pushed the WhatsApp confirmation. Clear the id so
+  // a later order is distinct, then NAVIGATE (not window.open — that is popup-blocked after an await)
+  // to the bot chat so the customer lands on the pushed confirmation.
+  pendingRequestId = null;
+  showPosting('ההזמנה נשלחה ✓ פותח וואטסאפ...');
   const phone = (catalog.distributorPhone || '').replace(/\D/g, '');
-  const ack = (catalog.ackMarker || '🌐✅') + ' ' + (catalog.ackText || '');
-  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(ack), '_blank');
+  window.location.href = 'https://wa.me/' + phone;
+}
+
+function showPosting(text) {
+  const t = document.getElementById('posting-text');
+  if (t && text) t.textContent = text;
+  document.getElementById('posting-overlay').classList.remove('hidden');
+}
+function hidePosting() {
+  document.getElementById('posting-overlay').classList.add('hidden');
 }
 
 function renderUnmatched() {
@@ -1083,11 +1124,14 @@ function openUnmatchedModal(idx) {
       const row = document.createElement('div');
       row.className = 'suggestion-row';
       const initial = (sug.name || '?').trim()[0] || '·';
+      const mkt = marketName(sug.market_type_id);
       row.innerHTML =
         '<div class="suggestion-pimg">' + escapeHtml(initial) + '</div>' +
         '<div class="suggestion-text">' +
           '<div class="suggestion-name">' + escapeHtml(sug.name) + '</div>' +
-          '<div class="suggestion-meta">' + escapeHtml(sug.sku_code) + '</div>' +
+          '<div class="suggestion-meta">' + escapeHtml(sug.sku_code) +
+            (mkt ? ' · ' + escapeHtml(mkt) : '') +
+          '</div>' +
         '</div>' +
         '<span class="suggestion-arrow">←</span>';
       row.onclick = function() { pickSuggestion(idx, sug); };
