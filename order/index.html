@@ -654,6 +654,9 @@ let activeTab = null;
 let activeCat = null;
 let activeView = 'catalog';
 let unmatchedItems = [];
+// Clarification picks (raw customer text → chosen sku) sent with the order so the backend learns
+// them as contact aliases, so next time the same wording auto-matches.
+let resolvedAliases = [];
 
 async function init() {
   showLoading();
@@ -686,9 +689,15 @@ async function init() {
   const hasFavorites = catalog.favorites && catalog.favorites.length > 0;
   const hasSession = catalog.existingOrder !== null;
 
-  if (hasSession && catalog.existingOrder.length > 0) {
-    activeTab = catalog.existingOrder[0].market_type_id;
+  const hasClarifications = unmatchedItems.length > 0;
+  const editMarket = (hasSession && catalog.existingOrder.length > 0)
+    ? catalog.existingOrder[0].market_type_id
+    : null;
+  if (editMarket && !hasClarifications) {
+    activeTab = editMarket;
   } else if (hasFavorites) {
+    // Clarifications present (or no real edit-market) → land on the customer's regular items, which
+    // are never empty, instead of a market/category filter that can resolve to an empty list.
     activeTab = 'favorites';
   } else {
     activeTab = catalog.marketTypes[0]?.id;
@@ -1048,7 +1057,7 @@ async function sendOrder() {
     const r = await fetch(API + '/web-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ items, clientRequestId: pendingRequestId })
+      body: JSON.stringify({ items, clientRequestId: pendingRequestId, aliases: resolvedAliases })
     });
     if (r.status === 401) { hidePosting(); showError('הקישור פג תוקף — בקש קישור חדש'); return; }
     if (!r.ok) { hidePosting(); alert('שגיאה בשליחת ההזמנה, נסה שוב'); if (btn) btn.disabled = false; return; }
@@ -1147,7 +1156,9 @@ function closeUnmatchedModal() {
 }
 
 function pickSuggestion(unmatchedIdx, sug) {
+  const rawText = unmatchedItems[unmatchedIdx]?.text;
   qty[sug.sku_code] = (qty[sug.sku_code] || 0) + 1;
+  if (rawText) resolvedAliases.push({ raw_text: rawText, sku_code: sug.sku_code });
   unmatchedItems.splice(unmatchedIdx, 1);
   renderUnmatched();
   renderContent();
@@ -1161,7 +1172,7 @@ function updateFooter() {
   const units = Object.values(qty).reduce((a, b) => a + b, 0);
 
   const badge = document.getElementById('badge');
-  document.getElementById('badge-count').textContent = n;
+  document.getElementById('badge-count').textContent = units; // total quantity across the cart, not distinct products
   badge.classList.toggle('on', n > 0);
 
   const btn = document.getElementById('footer-btn');
