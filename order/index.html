@@ -1172,7 +1172,7 @@ function updateFooter() {
   const units = Object.values(qty).reduce((a, b) => a + b, 0);
 
   const badge = document.getElementById('badge');
-  document.getElementById('badge-count').textContent = units; // total quantity across the cart, not distinct products
+  document.getElementById('badge-count').textContent = n; // number of distinct items in the cart
   badge.classList.toggle('on', n > 0);
 
   const btn = document.getElementById('footer-btn');
