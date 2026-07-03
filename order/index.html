@@ -375,6 +375,44 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 }
 .remove-btn:hover{color:var(--danger);background:oklch(96% 0.025 25)}
 
+/* Cart "you may also want these" suggestions — favourites (suggested qty) not yet in the cart. */
+.cart-suggest{margin:22px 14px 6px;border-top:1px dashed var(--line-strong);padding-top:16px}
+.cart-suggest-head{
+  display:flex;align-items:center;gap:8px;padding:0 4px 10px;
+  font-size:13.5px;font-weight:700;color:var(--amber-ink);
+}
+.cart-suggest-head::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0;
+}
+.cart-suggest-group-title{
+  padding:10px 4px 6px;
+  font-size:11px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.08em;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.cart-suggest-group-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.suggest-row{
+  background:var(--amber-soft);
+  margin:0 0 6px;
+  border:1px solid oklch(90% 0.040 75);
+  border-radius:var(--r);
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 12px;
+}
+.suggest-info{flex:1;min-width:0}
+.suggest-name{font-size:13.5px;font-weight:500;color:var(--ink)}
+.suggest-meta{font-size:10.5px;color:var(--amber-ink);margin-top:2px;font-weight:600}
+.suggest-add{
+  flex-shrink:0;
+  background:var(--surface);color:var(--amber-ink);
+  border:1px solid oklch(85% 0.055 75);
+  border-radius:999px;
+  font-size:12.5px;font-weight:700;
+  padding:7px 14px;cursor:pointer;font-family:inherit;
+  transition:transform .1s, background .15s;
+}
+.suggest-add:active{transform:scale(.95);background:var(--amber-soft)}
+
 .empty-cart{
   text-align:center;padding:80px 24px;color:var(--ink-3);
 }
@@ -712,9 +750,10 @@ async function init() {
   renderContent();
   updateFooter();
 
-  // Editing an existing order (token carries a session id) → open straight to the cart so the
-  // customer immediately sees the already-ordered items to review/change.
-  if (catalog.sessionId && catalog.existingOrder && catalog.existingOrder.length > 0) {
+  // Editing/changing an order (a confirmed session via the token, OR pre-filled in-progress
+  // items) → open straight to the cart so the customer sees the current order to review/change.
+  // If items still need clarifying, stay on the catalog so those can be resolved first.
+  if (catalog.existingOrder && catalog.existingOrder.length > 0 && unmatchedItems.length === 0) {
     switchView('cart');
   }
 }
@@ -1018,6 +1057,60 @@ function renderCart() {
 
     list.appendChild(section);
   });
+
+  // While editing/changing an order, offer the customer's usual extras (favourites with a
+  // suggested quantity, not already in the cart) right here in the cart, grouped by market type.
+  if (catalog.existingOrder !== null) renderCartSuggestions(list);
+}
+
+// "You may want to order these too" — the contact's favourites (suggested qty > 0) that aren't
+// already in the cart, grouped by market type, each one-tap addable at its suggested quantity.
+function renderCartSuggestions(container) {
+  const inCart = new Set(Object.keys(qty).filter(c => qty[c] > 0));
+  const sugg = (catalog.favorites || []).filter(f => f.suggested_qty > 0 && !inCart.has(f.sku_code));
+  if (!sugg.length) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'cart-suggest';
+  wrap.innerHTML = '<div class="cart-suggest-head">אולי תרצה להזמין גם את המוצרים האלה</div>';
+
+  const grouped = {};
+  sugg.forEach(f => {
+    const mt = catalog.marketTypes.find(m => String(m.id) === String(f.market_type_id));
+    const key = mt?.name || 'אחר';
+    (grouped[key] = grouped[key] || []).push(f);
+  });
+
+  Object.entries(grouped).forEach(([mtName, favs]) => {
+    const gt = document.createElement('div');
+    gt.className = 'cart-suggest-group-title';
+    gt.textContent = mtName;
+    wrap.appendChild(gt);
+
+    favs.forEach(f => {
+      const safeCode = f.sku_code.replace(/'/g, "\\'");
+      const row = document.createElement('div');
+      row.className = 'suggest-row';
+      row.innerHTML =
+        '<div class="suggest-info">' +
+          '<div class="suggest-name">' + escapeHtml(f.name) + '</div>' +
+          '<div class="suggest-meta">מוצע ' + f.suggested_qty + '</div>' +
+        '</div>' +
+        '<button class="suggest-add" onclick="addSuggested(\'' + safeCode + '\',' + f.suggested_qty + ')">+ הוסף</button>';
+      wrap.appendChild(row);
+    });
+  });
+
+  container.appendChild(wrap);
+}
+
+// Add a suggested favourite at its suggested quantity, then re-render the cart (it moves into the
+// order and out of the suggestions list).
+function addSuggested(code, q) {
+  qty[code] = q;
+  updateFooter();
+  renderCart();
+  toast(findSku(code).name + ' × ' + q);
 }
 
 function removeFromCart(code) {
