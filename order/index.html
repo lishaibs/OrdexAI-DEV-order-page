@@ -1153,7 +1153,14 @@ async function sendOrder() {
       body: JSON.stringify({ items, clientRequestId: pendingRequestId, aliases: resolvedAliases })
     });
     if (r.status === 401) { hidePosting(); showError('הקישור פג תוקף — בקש קישור חדש'); return; }
-    if (!r.ok) { hidePosting(); alert('שגיאה בשליחת ההזמנה, נסה שוב'); if (btn) btn.disabled = false; return; }
+    if (!r.ok) {
+      let errCode = ''; try { errCode = (await r.json()).error; } catch (e) {}
+      hidePosting();
+      // Edit window closed server-side (cutoff passed) — non-retryable, so show the blocking screen
+      // rather than the "try again" alert.
+      if (errCode === 'edit_window_closed') { showError('לא ניתן לערוך את ההזמנה יותר — חלון העריכה נסגר'); return; }
+      alert('שגיאה בשליחת ההזמנה, נסה שוב'); if (btn) btn.disabled = false; return;
+    }
   } catch (e) {
     console.error(e);
     hidePosting();
