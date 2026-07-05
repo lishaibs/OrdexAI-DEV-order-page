@@ -413,6 +413,24 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 }
 .suggest-add:active{transform:scale(.95);background:var(--amber-soft)}
 
+/* Edit-deadline banner in the cart — the order's "editable until <cutoff>" notice; red once passed. */
+.edit-deadline{
+  margin:12px 14px 0;
+  padding:10px 12px;
+  background:var(--amber-soft);
+  border:1px solid oklch(88% 0.045 75);
+  border-radius:var(--r);
+  font-size:12.5px;font-weight:600;color:var(--amber-ink);
+  display:flex;align-items:center;gap:8px;line-height:1.35;
+}
+.edit-deadline::before{ content:"⏳"; font-size:14px; flex-shrink:0; }
+.edit-deadline.expired{
+  background:oklch(96% 0.03 25);
+  border-color:oklch(85% 0.08 25);
+  color:var(--danger);
+}
+.edit-deadline.expired::before{ content:"🔒"; }
+
 .empty-cart{
   text-align:center;padding:80px 24px;color:var(--ink-3);
 }
@@ -636,6 +654,7 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
     <span class="cart-title">העגלה שלי</span>
     <span class="cart-summary" id="cart-summary"></span>
   </div>
+  <div id="edit-deadline" class="edit-deadline hidden"></div>
   <div id="cart-items"></div>
   <div class="cart-bottom" id="cart-bottom">
     <button class="cart-reset-btn" onclick="clearCart()">אפס סל</button>
@@ -695,6 +714,9 @@ let unmatchedItems = [];
 // Clarification picks (raw customer text → chosen sku) sent with the order so the backend learns
 // them as contact aliases, so next time the same wording auto-matches.
 let resolvedAliases = [];
+// Edit deadline (unix seconds) for an order being edited — null for new orders. The page shows it
+// and blocks a submit that slips past it (the server re-checks isOrderEditable authoritatively too).
+let editUntilEpoch = null;
 
 async function init() {
   showLoading();
@@ -714,6 +736,7 @@ async function init() {
   }
 
   unmatchedItems = [...(catalog.unmatchedItems || [])];
+  editUntilEpoch = catalog.editUntilEpoch || null;
 
   // Favourites tab: show items with the highest suggested quantity first.
   if (Array.isArray(catalog.favorites)) {
@@ -756,6 +779,9 @@ async function init() {
   if (catalog.existingOrder && catalog.existingOrder.length > 0 && unmatchedItems.length === 0) {
     switchView('cart');
   }
+
+  // Re-evaluate the edit deadline periodically so the cart reflects it lapsing while the page is open.
+  if (editUntilEpoch) setInterval(applyEditDeadlineState, 30000);
 }
 
 function findSku(code) {
@@ -996,7 +1022,7 @@ function switchView(view) {
     box.classList.toggle('hidden', view !== 'catalog');
   }
 
-  if (view === 'cart') renderCart();
+  if (view === 'cart') { renderCart(); applyEditDeadlineState(); }
   if (view === 'catalog') renderContent();
   window.scrollTo(0, 0);
 }
@@ -1015,7 +1041,7 @@ function renderCart() {
     return;
   }
 
-  document.getElementById('cart-send-btn').disabled = false;
+  document.getElementById('cart-send-btn').disabled = isEditExpired();
   const units = items.reduce((a, [_, q]) => a + q, 0);
   summary.textContent = items.length + ' פריטים · ' + units + ' יחידות';
 
@@ -1113,6 +1139,29 @@ function addSuggested(code, q) {
   toast(findSku(code).name + ' × ' + q);
 }
 
+function isEditExpired() {
+  return editUntilEpoch != null && (Date.now() / 1000) > editUntilEpoch;
+}
+
+// Show/refresh the edit-deadline banner in the cart; once the deadline lapses, flip it to the closed
+// state and disable sending. The server re-checks isOrderEditable on submit regardless — this is the
+// friendly heads-up so the customer isn't rejected only after typing.
+function applyEditDeadlineState() {
+  const banner = document.getElementById('edit-deadline');
+  if (!banner) return;
+  if (!editUntilEpoch) { banner.classList.add('hidden'); return; }
+  const expired = isEditExpired();
+  banner.classList.remove('hidden');
+  banner.classList.toggle('expired', expired);
+  banner.textContent = expired
+    ? 'חלון העריכה נסגר — כבר לא ניתן לשנות את ההזמנה'
+    : (catalog.editUntilLabel || '');
+  if (expired) {
+    const sendBtn = document.getElementById('cart-send-btn');
+    if (sendBtn) sendBtn.disabled = true;
+  }
+}
+
 function removeFromCart(code) {
   delete qty[code];
   renderCart();
@@ -1133,6 +1182,7 @@ let pendingRequestId = null;
 async function sendOrder() {
   const entries = Object.entries(qty).filter(([_, q]) => q > 0);
   if (entries.length === 0) return;
+  if (isEditExpired()) { showError('לא ניתן לערוך את ההזמנה יותר — חלון העריכה נסגר'); return; }
   const items = entries.map(([sku_code, quantity]) => ({ sku_code, quantity }));
 
   const btn = document.getElementById('cart-send-btn');
