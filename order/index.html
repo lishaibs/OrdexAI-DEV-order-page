@@ -639,6 +639,7 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 </div>
 
 <div id="unmatched-box" class="unmatched-box hidden"></div>
+<div id="allvariants-box" class="unmatched-box hidden"></div>
 
 <div id="catalog-view">
   <div id="mkt-tabs" class="mkt-tabs"></div>
@@ -711,6 +712,8 @@ let activeTab = null;
 let activeCat = null;
 let activeView = 'catalog';
 let unmatchedItems = [];
+// "מכל סוג" / "מסוג" items → each rendered as a checkbox multi-select (mirrors the chat Flow).
+let allVariantsItems = [];
 // Clarification picks (raw customer text → chosen sku) sent with the order so the backend learns
 // them as contact aliases, so next time the same wording auto-matches.
 let resolvedAliases = [];
@@ -736,6 +739,7 @@ async function init() {
   }
 
   unmatchedItems = [...(catalog.unmatchedItems || [])];
+  allVariantsItems = [...(catalog.allVariantsItems || [])];
   editUntilEpoch = catalog.editUntilEpoch || null;
 
   // Favourites tab: show items with the highest suggested quantity first.
@@ -750,7 +754,7 @@ async function init() {
   const hasFavorites = catalog.favorites && catalog.favorites.length > 0;
   const hasSession = catalog.existingOrder !== null;
 
-  const hasClarifications = unmatchedItems.length > 0;
+  const hasClarifications = unmatchedItems.length > 0 || allVariantsItems.length > 0;
   const editMarket = (hasSession && catalog.existingOrder.length > 0)
     ? catalog.existingOrder[0].market_type_id
     : null;
@@ -769,6 +773,7 @@ async function init() {
   document.title = 'הזמנה — ' + catalog.org.name;
 
   renderUnmatched();
+  renderAllVariants();
   renderTabs();
   renderContent();
   updateFooter();
@@ -776,7 +781,7 @@ async function init() {
   // Editing/changing an order (a confirmed session via the token, OR pre-filled in-progress
   // items) → open straight to the cart so the customer sees the current order to review/change.
   // If items still need clarifying, stay on the catalog so those can be resolved first.
-  if (catalog.existingOrder && catalog.existingOrder.length > 0 && unmatchedItems.length === 0) {
+  if (catalog.existingOrder && catalog.existingOrder.length > 0 && unmatchedItems.length === 0 && allVariantsItems.length === 0) {
     switchView('cart');
   }
 
@@ -1315,6 +1320,85 @@ function pickSuggestion(unmatchedIdx, sug) {
   updateFooter();
   closeUnmatchedModal();
   toast(sug.name + ' נוסף לסל');
+}
+
+// ── "מכל סוג" checkbox multi-select (parity with the chat WhatsApp Flow) ──
+function renderAllVariants() {
+  const box = document.getElementById('allvariants-box');
+  if (!allVariantsItems || allVariantsItems.length === 0) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  box.innerHTML =
+    '<div class="unmatched-header">' +
+      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01" stroke-linecap="round"></path></svg>' +
+      'בחירת סוגים · ' + allVariantsItems.length +
+    '</div>';
+  allVariantsItems.forEach(function(item, idx) {
+    const row = document.createElement('div');
+    row.className = 'unmatched-row';
+    const text = document.createElement('span');
+    text.className = 'unmatched-text';
+    text.textContent = item.keyword + ' — מכל סוג';
+    row.appendChild(text);
+    const btn = document.createElement('button');
+    btn.className = 'unmatched-find-btn';
+    btn.textContent = 'בחר סוגים';
+    btn.onclick = function() { openAllVariantsModal(idx); };
+    row.appendChild(btn);
+    box.appendChild(row);
+  });
+}
+
+function openAllVariantsModal(idx) {
+  const item = allVariantsItems[idx];
+  const modal = document.getElementById('unmatched-modal');
+  document.getElementById('modal-title').textContent =
+    'בחר סוגים עבור "' + item.keyword + '" · ' + (item.quantity || 1) + ' יח\' לכל בחירה';
+  const list = document.getElementById('suggestions-list');
+  list.innerHTML = '';
+  if (!item.variants || item.variants.length === 0) {
+    list.innerHTML = '<div class="no-suggestions">לא נמצאו סוגים מתאימים</div>';
+    modal.classList.remove('hidden');
+    return;
+  }
+  item.variants.forEach(function(v) {
+    const row = document.createElement('label');
+    row.className = 'suggestion-row';
+    row.style.cursor = 'pointer';
+    const mkt = marketName(v.market_type_id);
+    row.innerHTML =
+      '<input type="checkbox" class="av-check" data-sku="' + escapeHtml(v.sku_code) + '" ' +
+        'style="width:20px;height:20px;flex:none;accent-color:#2563eb">' +
+      '<div class="suggestion-text">' +
+        '<div class="suggestion-name">' + escapeHtml(v.name) + '</div>' +
+        '<div class="suggestion-meta">' + escapeHtml(v.sku_code) + (mkt ? ' · ' + escapeHtml(mkt) : '') + '</div>' +
+      '</div>';
+    list.appendChild(row);
+  });
+  const confirm = document.createElement('button');
+  confirm.className = 'unmatched-find-btn';
+  confirm.style.cssText = 'width:100%;margin-top:14px;padding:14px;font-size:15px';
+  confirm.textContent = 'הוסף לסל';
+  confirm.onclick = function() { confirmAllVariants(idx); };
+  list.appendChild(confirm);
+  modal.classList.remove('hidden');
+}
+
+function confirmAllVariants(idx) {
+  const item = allVariantsItems[idx];
+  const checks = document.querySelectorAll('#suggestions-list .av-check:checked');
+  if (checks.length === 0) { toast('לא נבחרו סוגים'); return; }
+  const q = Number(item.quantity) || 1;
+  checks.forEach(function(c) {
+    const sku = c.getAttribute('data-sku');
+    qty[sku] = (qty[sku] || 0) + q;   // N units per selected product, like the chat Flow
+  });
+  const n = checks.length;
+  allVariantsItems.splice(idx, 1);
+  renderAllVariants();
+  renderContent();
+  updateFooter();
+  closeUnmatchedModal();
+  toast(n + ' מוצרים נוספו לסל');
 }
 
 function updateFooter() {
