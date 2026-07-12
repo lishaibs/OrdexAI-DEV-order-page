@@ -1339,9 +1339,11 @@ function closeUnmatchedModal() {
 }
 
 function pickSuggestion(unmatchedIdx, sug) {
-  const rawText = unmatchedItems[unmatchedIdx]?.text;
+  const item = unmatchedItems[unmatchedIdx];
+  const rawText = item?.text;
   qty[sug.sku_code] = (qty[sug.sku_code] || 0) + 1;
-  if (rawText) resolvedAliases.push({ raw_text: rawText, sku_code: sug.sku_code });
+  // Carry fat% so the learned alias is the fuller "בולגרית 24", matching the chat behavior.
+  if (rawText) resolvedAliases.push({ raw_text: rawText, sku_code: sug.sku_code, fat_pct: item?.fat_pct ?? null });
   unmatchedItems.splice(unmatchedIdx, 1);
   renderUnmatched();
   renderContent();
