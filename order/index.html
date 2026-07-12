@@ -137,13 +137,6 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   transition:background .15s;
 }
 .unmatched-find-btn:active{background:var(--amber-soft)}
-.unmatched-skip-btn{
-  background:transparent;color:var(--amber-ink);
-  border:none;padding:5px 4px;
-  font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0;margin-right:2px;
-  text-decoration:underline;opacity:.8;
-}
-.unmatched-skip-btn:active{opacity:1}
 .modal-skip{
   margin-top:10px;text-align:center;padding:13px;
   color:var(--ink-3);font-size:13px;font-weight:600;cursor:pointer;
@@ -1282,13 +1275,6 @@ function renderUnmatched() {
     btn.textContent = 'מצא בקטלוג';
     btn.onclick = function() { openUnmatchedModal(idx); };
     row.appendChild(btn);
-
-    // "Not in the list" — drop the item from the order (parity with the chat clarification skip).
-    const skip = document.createElement('button');
-    skip.className = 'unmatched-skip-btn';
-    skip.textContent = 'לא ברשימה';
-    skip.onclick = function() { dropUnmatched(idx); };
-    row.appendChild(skip);
 
     box.appendChild(row);
   });
