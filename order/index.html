@@ -137,6 +137,19 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   transition:background .15s;
 }
 .unmatched-find-btn:active{background:var(--amber-soft)}
+.unmatched-skip-btn{
+  background:transparent;color:var(--amber-ink);
+  border:none;padding:5px 4px;
+  font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0;margin-right:2px;
+  text-decoration:underline;opacity:.8;
+}
+.unmatched-skip-btn:active{opacity:1}
+.modal-skip{
+  margin-top:10px;text-align:center;padding:13px;
+  color:var(--ink-3);font-size:13px;font-weight:600;cursor:pointer;
+  border-top:1px solid var(--line);
+}
+.modal-skip:active{color:var(--ink)}
 
 .mkt-tabs{
   background:var(--surface);
@@ -717,6 +730,7 @@ let allVariantsItems = [];
 // Clarification picks (raw customer text → chosen sku) sent with the order so the backend learns
 // them as contact aliases, so next time the same wording auto-matches.
 let resolvedAliases = [];
+let droppedUnmatched = [];   // raw texts the customer marked "not in the list" — sent to the server to record as unmatched
 // Edit deadline (unix seconds) for an order being edited — null for new orders. The page shows it
 // and blocks a submit that slips past it (the server re-checks isOrderEditable authoritatively too).
 let editUntilEpoch = null;
@@ -1205,7 +1219,7 @@ async function sendOrder() {
     const r = await fetch(API + '/web-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ items, clientRequestId: pendingRequestId, aliases: resolvedAliases })
+      body: JSON.stringify({ items, clientRequestId: pendingRequestId, aliases: resolvedAliases, droppedUnmatched })
     });
     if (r.status === 401) { hidePosting(); showError('הקישור פג תוקף — בקש קישור חדש'); return; }
     if (!r.ok) {
@@ -1269,8 +1283,29 @@ function renderUnmatched() {
     btn.onclick = function() { openUnmatchedModal(idx); };
     row.appendChild(btn);
 
+    // "Not in the list" — drop the item from the order (parity with the chat clarification skip).
+    const skip = document.createElement('button');
+    skip.className = 'unmatched-skip-btn';
+    skip.textContent = 'לא ברשימה';
+    skip.onclick = function() { dropUnmatched(idx); };
+    row.appendChild(skip);
+
     box.appendChild(row);
   });
+}
+
+// Customer says "my item isn't in the list" → drop it from the order. Recorded server-side as
+// unmatched (like the chat "דלג"), so the distributor still sees what was asked for.
+function dropUnmatched(idx) {
+  const item = unmatchedItems[idx];
+  if (!item) return;
+  if (item.text) droppedUnmatched.push(item.text);
+  unmatchedItems.splice(idx, 1);
+  renderUnmatched();
+  renderContent();
+  updateFooter();
+  closeUnmatchedModal();
+  toast('הפריט הוסר מההזמנה');
 }
 
 function openUnmatchedModal(idx) {
@@ -1302,6 +1337,13 @@ function openUnmatchedModal(idx) {
       list.appendChild(row);
     });
   }
+
+  // Always offer an explicit escape: "my product isn't in the list" → drop it from the order.
+  const skip = document.createElement('div');
+  skip.className = 'modal-skip';
+  skip.textContent = 'המוצר שלי לא ברשימה — הסר מההזמנה';
+  skip.onclick = function() { dropUnmatched(idx); };
+  list.appendChild(skip);
 
   modal.classList.remove('hidden');
 }
