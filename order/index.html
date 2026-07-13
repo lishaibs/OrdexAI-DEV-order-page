@@ -144,6 +144,24 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 }
 .modal-skip:active{color:var(--ink)}
 
+.search-bar{
+  display:flex;align-items:center;gap:9px;
+  background:var(--surface);
+  padding:10px 14px;
+  border-bottom:1px solid var(--line);
+}
+.search-ico{width:18px;height:18px;stroke:var(--ink-3);fill:none;stroke-width:2;flex-shrink:0}
+.search-input{
+  flex:1;min-width:0;border:none;outline:none;background:transparent;
+  font-size:15px;color:var(--ink);font-family:inherit;padding:2px 0;
+}
+.search-input::placeholder{color:var(--ink-4)}
+.search-input::-webkit-search-cancel-button{display:none}
+.search-clear{
+  border:none;background:var(--surface-2);color:var(--ink-2);
+  width:26px;height:26px;border-radius:50%;font-size:17px;line-height:1;
+  cursor:pointer;flex-shrink:0;display:grid;place-items:center;padding:0;font-family:inherit;
+}
 .mkt-tabs{
   background:var(--surface);
   display:flex;
@@ -648,6 +666,11 @@ button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 <div id="allvariants-box" class="unmatched-box hidden"></div>
 
 <div id="catalog-view">
+  <div class="search-bar">
+    <svg class="search-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+    <input id="search-input" class="search-input" type="search" inputmode="search" enterkeyhint="search" placeholder="חיפוש מוצר…" oninput="onSearch(this.value)" autocomplete="off">
+    <button id="search-clear" class="search-clear hidden" onclick="clearSearch()" aria-label="נקה חיפוש">×</button>
+  </div>
   <div id="mkt-tabs" class="mkt-tabs"></div>
   <div id="cat-bar" class="cat-bar"></div>
   <div id="plist"></div>
@@ -727,6 +750,8 @@ let droppedUnmatched = [];   // raw texts the customer marked "not in the list" 
 // Edit deadline (unix seconds) for an order being edited — null for new orders. The page shows it
 // and blocks a submit that slips past it (the server re-checks isOrderEditable authoritatively too).
 let editUntilEpoch = null;
+// Live product-search query (empty = browse by tab; non-empty = show cross-market matches).
+let searchQuery = '';
 
 async function init() {
   showLoading();
@@ -839,6 +864,7 @@ function renderTabs() {
 }
 
 function switchTab(tabId) {
+  resetSearch(); // leaving search to browse a market
   activeTab = tabId;
   activeCat = null;
   document.querySelectorAll('.mkt-tab').forEach(t =>
@@ -847,8 +873,49 @@ function switchTab(tabId) {
   renderContent();
 }
 
+// ── Product search (supermarket-style: type → cross-market matches with one-tap add) ──
+function resetSearch() {
+  searchQuery = '';
+  const inp = document.getElementById('search-input'); if (inp) inp.value = '';
+  const clr = document.getElementById('search-clear'); if (clr) clr.classList.add('hidden');
+}
+
+function onSearch(v) {
+  searchQuery = (v || '').trim();
+  const clr = document.getElementById('search-clear'); if (clr) clr.classList.toggle('hidden', !searchQuery);
+  renderContent();
+}
+
+function clearSearch() { resetSearch(); renderContent(); }
+
+function renderSearchResults() {
+  const list = document.getElementById('plist');
+  const q = searchQuery.toLowerCase();
+  const matches = catalog.skus.filter(s =>
+    (s.name && s.name.toLowerCase().includes(q)) ||
+    (s.sku_code && s.sku_code.toLowerCase().includes(q))
+  );
+  list.innerHTML = '';
+  if (!matches.length) {
+    list.innerHTML = '<div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div>לא נמצאו מוצרים</div>';
+    return;
+  }
+  const title = document.createElement('div');
+  title.className = 'sec-title';
+  title.innerHTML = '<span class="sec-title-main">תוצאות חיפוש</span><span class="sec-title-meta">' + matches.length + ' מוצרים</span>';
+  list.appendChild(title);
+  matches.forEach((sku, idx) => list.appendChild(createProductCard(sku.sku_code, sku.name, idx)));
+}
+
 function renderContent() {
   const catBar = document.getElementById('cat-bar');
+  // Active search overrides tabs: show cross-market matches, hide the category bar.
+  if (searchQuery) {
+    catBar.innerHTML = '';
+    catBar.style.display = 'none';
+    renderSearchResults();
+    return;
+  }
   if (activeTab === 'favorites') {
     catBar.innerHTML = '';
     catBar.style.display = 'none';
@@ -1233,7 +1300,9 @@ async function sendOrder() {
   // a later order is distinct, then NAVIGATE (not window.open — that is popup-blocked after an await)
   // to the bot chat so the customer lands on the pushed confirmation.
   pendingRequestId = null;
-  showPosting('ההזמנה נשלחה ✓ פותח וואטסאפ...');
+  let respStatus = 'ok';
+  try { respStatus = (await r.json()).status || 'ok'; } catch (e) {}
+  showPosting(respStatus === 'unchanged' ? 'לא בוצעו שינויים — פותח וואטסאפ...' : 'ההזמנה נשלחה ✓ פותח וואטסאפ...');
   const phone = (catalog.distributorPhone || '').replace(/\D/g, '');
   window.location.href = 'https://wa.me/' + phone;
 }
