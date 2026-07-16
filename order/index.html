@@ -6,1538 +6,967 @@
 <title>הזמנה</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:           oklch(22% 0.012 145);
-  --ink-2:         oklch(42% 0.012 145);
-  --ink-3:         oklch(60% 0.010 145);
-  --ink-4:         oklch(75% 0.008 145);
-  --bg:            oklch(97.5% 0.008 95);
-  --surface:       #ffffff;
-  --surface-2:     oklch(96% 0.010 95);
-  --line:          oklch(91% 0.008 95);
-  --line-strong:   oklch(85% 0.010 95);
-  --brand:         oklch(45% 0.085 152);
-  --brand-deep:    oklch(36% 0.075 152);
-  --brand-soft:    oklch(94% 0.030 152);
-  --brand-ink:     oklch(28% 0.060 152);
-  --amber:         oklch(72% 0.130 70);
-  --amber-soft:    oklch(95% 0.035 75);
-  --amber-ink:     oklch(45% 0.110 60);
-  --danger:        oklch(58% 0.180 25);
-  --r-sm: 8px;
-  --r:    12px;
-  --r-lg: 16px;
-  --r-xl: 22px;
+  --bg:#e7efea; --app:#f5f8f6; --surface:#fff;
+  --ink:#0d1f18; --ink-2:#3f574c; --ink-3:#536b60; --ink-4:#a8bcb1;
+  --line:#dde8e2; --line-2:#c7dbd0;
+  --green:#0f4834; --green-deep:#082419; --green-mid:#0c3b2b;
+  --wa:#25d366; --wa-ink:#04220f; --wa-deep:#0c7a45; --wa-soft:#eafaf0; --wa-line:#b7e8ca;
+  --amber-bg:#fdf4e3; --amber-line:#f0dcae; --amber-line-2:#ecca8a; --amber-ink:#8a5a12;
+  --danger:#d64545; --danger-bg:#fdeeee; --danger-line:#f0c2c2;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--ink);min-height:100vh}
-body{
-  font-family:'Heebo',system-ui,sans-serif;
-  -webkit-font-smoothing:antialiased;
-  text-rendering:optimizeLegibility;
-  font-size:15px;
-  line-height:1.4;
-}
+body{font-family:'Heebo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-size:15px;line-height:1.4}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+input{font-family:inherit}
+input[type=search]::-webkit-search-cancel-button{display:none}
+::-webkit-scrollbar{display:none}
 .hidden{display:none!important}
-button{font-family:inherit}
-button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+@keyframes om-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes om-sheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes om-fade{from{opacity:0}to{opacity:1}}
+@keyframes om-pop{0%{transform:scale(.85)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes om-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
 
-.hdr{
-  background:var(--surface);
-  padding:14px 18px 12px;
-  display:flex;align-items:center;gap:14px;
-  position:sticky;top:0;z-index:100;
-  border-bottom:1px solid var(--line);
-}
-.hdr-mark{
-  width:40px;height:40px;flex-shrink:0;
-  border-radius:11px;
-  background:linear-gradient(155deg, var(--brand) 0%, var(--brand-deep) 100%);
-  display:grid;place-items:center;
-  position:relative;
-  box-shadow:0 1px 0 oklch(40% 0.05 152 / .4) inset, 0 1px 2px oklch(30% 0.02 152 / .25);
-}
-.hdr-mark::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;
-  background:radial-gradient(120% 80% at 30% 20%, oklch(100% 0 0 / .25), transparent 60%);
-  pointer-events:none;
-}
-.hdr-mark span{
-  font-family:'Frank Ruhl Libre',serif;
-  font-weight:700;color:#fff;font-size:21px;line-height:1;
-  letter-spacing:-0.02em;position:relative;z-index:1;
-}
+.phone{max-width:440px;margin-inline:auto;min-height:100vh;background:var(--app);position:relative;box-shadow:0 0 60px rgba(12,59,43,.14);overflow:hidden}
+
+/* header */
+.hdr{background:var(--surface);padding:12px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--line)}
+.hdr-logo{width:42px;height:42px;flex:none;border-radius:12px;background:linear-gradient(155deg,var(--green),var(--green-deep));display:grid;place-items:center;box-shadow:0 2px 8px rgba(12,59,43,.25)}
+.hdr-logo span{font-family:'Plus Jakarta Sans';font-weight:800;color:#fff;font-size:19px}
 .hdr-info{flex:1;min-width:0}
-.hdr-org{
-  font-size:15.5px;font-weight:700;color:var(--ink);
-  letter-spacing:-0.01em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.hdr-sub{
-  font-size:11.5px;color:var(--ink-3);margin-top:2px;font-weight:500;
-  display:flex;align-items:center;gap:6px;
-}
-.hdr-sub::before{
-  content:"";width:5px;height:5px;border-radius:50%;
-  background:var(--brand);
-  box-shadow:0 0 0 3px var(--brand-soft);
-}
-.cart-pill{
-  display:flex;align-items:center;gap:6px;
-  background:var(--surface-2);color:var(--ink-2);
-  border:1px solid var(--line);
-  padding:7px 10px 7px 12px;border-radius:999px;
-  font-size:13px;font-weight:600;
-  cursor:default;
-  transition:transform .2s, background .2s, color .2s, border-color .2s;
-  flex-shrink:0;
-}
-.cart-pill svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
-.cart-pill.on{
-  background:var(--brand);color:#fff;border-color:var(--brand);
-  cursor:pointer;
-}
-.cart-pill.on:active{transform:scale(.96)}
-.cart-pill-count{
-  background:rgba(255,255,255,.22);color:#fff;
-  font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;
-  min-width:20px;text-align:center;
-}
-.cart-pill:not(.on) .cart-pill-count{display:none}
+.hdr-name{font-size:16px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-status{font-size:12px;color:var(--ink-3);font-weight:600;display:flex;align-items:center;gap:6px;margin-top:1px}
+.hdr-status::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--wa);box-shadow:0 0 0 3px rgba(37,211,102,.18)}
+.badge{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;border-radius:12px;background:#f0f6f2;color:var(--ink-2)}
+.badge.on{background:var(--green-mid);color:#fff}
+.badge svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9}
+.badge-count{position:absolute;top:-4px;left:-4px;background:var(--wa);color:var(--wa-ink);min-width:20px;height:20px;padding:0 5px;border-radius:999px;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid #fff}
+.badge:not(.on) .badge-count{display:none}
 
-.unmatched-box{
-  background:var(--amber-soft);
-  border:1px solid oklch(85% 0.060 80);
-  margin:10px 14px 4px;
-  border-radius:var(--r-lg);
-  overflow:hidden;
-}
-.unmatched-header{
-  font-weight:700;font-size:13px;color:var(--amber-ink);
-  padding:11px 14px 8px;
-  display:flex;align-items:center;gap:8px;
-}
-.unmatched-header svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
-.unmatched-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:9px 14px;
-  border-top:1px solid oklch(88% 0.050 80);
-}
-.unmatched-text{
-  font-size:13px;flex:1;min-width:0;color:var(--ink);font-weight:500;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.unmatched-find-btn{
-  background:#fff;color:var(--amber-ink);
-  border:1px solid oklch(82% 0.060 75);
-  padding:5px 12px;border-radius:999px;
-  font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;margin-right:10px;
-  transition:background .15s;
-}
-.unmatched-find-btn:active{background:var(--amber-soft)}
-.modal-skip{
-  margin-top:10px;text-align:center;padding:13px;
-  color:var(--ink-3);font-size:13px;font-weight:600;cursor:pointer;
-  border-top:1px solid var(--line);
-}
-.modal-skip:active{color:var(--ink)}
+/* clarify box */
+.clarify-box{margin:12px 14px 0;background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:16px;overflow:hidden}
+.clarify-head{display:flex;align-items:center;gap:9px;padding:12px 14px 10px;font-weight:800;font-size:13.5px;color:var(--amber-ink)}
+.clarify-head svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2}
+.clarify-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--amber-line)}
+.clarify-row-label{font-size:13.5px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clarify-cta{flex:none;background:#fff;color:var(--amber-ink);border:1px solid var(--amber-line-2);padding:8px 15px;border-radius:999px;font-size:12.5px;font-weight:800}
 
-.search-bar{
-  display:flex;align-items:center;gap:9px;
-  background:var(--surface);
-  padding:10px 14px;
-  border-bottom:1px solid var(--line);
-}
-.search-ico{width:18px;height:18px;stroke:var(--ink-3);fill:none;stroke-width:2;flex-shrink:0}
-.search-input{
-  flex:1;min-width:0;border:none;outline:none;background:transparent;
-  font-size:15px;color:var(--ink);font-family:inherit;padding:2px 0;
-}
+/* search */
+.searchbar{padding:12px 14px 6px}
+.searchbar-inner{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 1px 2px rgba(12,59,43,.04)}
+.searchbar-inner svg{width:19px;height:19px;stroke:var(--ink-3);fill:none;stroke-width:2;flex:none}
+.search-input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:15px;color:var(--ink);padding:0}
 .search-input::placeholder{color:var(--ink-4)}
-.search-input::-webkit-search-cancel-button{display:none}
-.search-clear{
-  border:none;background:var(--surface-2);color:var(--ink-2);
-  width:26px;height:26px;border-radius:50%;font-size:17px;line-height:1;
-  cursor:pointer;flex-shrink:0;display:grid;place-items:center;padding:0;font-family:inherit;
-}
-.mkt-tabs{
-  background:var(--surface);
-  display:flex;
-  border-bottom:1px solid var(--line);
-  overflow-x:auto;
-  padding:0 8px;
-}
-.mkt-tabs::-webkit-scrollbar{display:none}
-.mkt-tab{
-  padding:13px 14px 12px;text-align:center;
-  font-size:13.5px;font-weight:500;
-  color:var(--ink-3);cursor:pointer;
-  border-bottom:2.5px solid transparent;
-  transition:color .18s, border-color .18s;
-  white-space:nowrap;user-select:none;
-}
-.mkt-tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:700}
-.mkt-tab .tab-dot{
-  display:inline-block;width:6px;height:6px;border-radius:50%;
-  background:var(--amber);margin-left:6px;vertical-align:middle;
-}
+.search-clear{width:26px;height:26px;flex:none;border-radius:50%;background:#eef3f0;color:var(--ink-2);font-size:16px;display:grid;place-items:center}
 
-.cat-bar{
-  background:var(--bg);
-  padding:11px 14px 12px;
-  display:flex;gap:7px;
-  overflow-x:auto;
-  position:sticky;top:62px;z-index:90;
-  border-bottom:1px solid var(--line);
-}
-.cat-bar::-webkit-scrollbar{display:none}
-.cat-pill{
-  padding:7px 14px;border-radius:999px;
-  border:1px solid var(--line-strong);
-  font-size:12.5px;font-weight:500;
-  white-space:nowrap;cursor:pointer;
-  color:var(--ink-2);background:var(--surface);
-  flex-shrink:0;
-  transition:all .15s;
-  user-select:none;
-}
-.cat-pill:active{transform:scale(.97)}
-.cat-pill.on{
-  background:var(--brand-ink);
-  border-color:var(--brand-ink);
-  color:#fff;font-weight:600;
-}
+/* tabs + pills */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:8px 14px 2px}
+.tab{flex:none;display:flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;font-size:13.5px;font-weight:700;white-space:nowrap;background:var(--surface);color:var(--ink-2);border:1px solid var(--line)}
+.tab.on{background:var(--green-mid);color:#fff;border-color:var(--green-mid)}
+.tab-dot{width:6px;height:6px;border-radius:50%;background:#e8a53a}
+.tab.on .tab-dot{display:none}
+.cats{display:flex;gap:7px;overflow-x:auto;padding:8px 14px 4px}
+.pill{flex:none;padding:8px 15px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:var(--surface);color:var(--ink-2);border:1px solid var(--line)}
+.pill.on{background:var(--green);color:#fff;border-color:var(--green)}
 
-.sec-title{
-  padding:18px 18px 8px;
-  display:flex;align-items:baseline;gap:8px;
-}
-.sec-title-main{
-  font-size:17px;font-weight:700;color:var(--ink);
-  letter-spacing:-0.01em;
-}
-.sec-title-meta{
-  font-size:11.5px;color:var(--ink-3);font-weight:500;
-}
+/* hero */
+.hero{margin:10px 14px 4px;background:linear-gradient(155deg,var(--green),var(--green-deep));border-radius:18px;padding:16px 16px 15px;color:#fff;box-shadow:0 10px 30px rgba(12,59,43,.22)}
+.hero-kick{font-size:12px;font-weight:700;letter-spacing:.06em;color:#8fe6b5}
+.hero-line{font-size:17px;font-weight:800;margin-top:4px;letter-spacing:-.01em;text-wrap:pretty}
+.hero-btns{display:flex;gap:9px;margin-top:13px}
+.hero-go{flex:1;background:var(--wa);color:var(--wa-ink);font-weight:800;font-size:14.5px;padding:13px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(37,211,102,.3)}
+.hero-go svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4}
+.hero-stay{flex:none;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:14px;padding:13px 15px;border-radius:12px;border:1px solid rgba(255,255,255,.18)}
 
-.pcard{
-  background:var(--surface);
-  margin:0 14px 8px;
-  border-radius:var(--r-lg);
-  display:flex;align-items:center;gap:13px;
-  padding:11px 12px 11px 11px;
-  border:1px solid var(--line);
-  box-shadow:0 1px 0 oklch(94% 0.010 95);
-  animation:slideup .22s cubic-bezier(.2,.8,.2,1) both;
-  transition:border-color .18s, box-shadow .18s;
-}
-.pcard.has-qty{
-  border-color:oklch(85% 0.040 152);
-  box-shadow:0 1px 0 oklch(90% 0.025 152), 0 4px 14px oklch(60% 0.05 152 / .08);
-}
-@keyframes slideup{
-  from{opacity:0;transform:translateY(6px)}
-  to{opacity:1;transform:translateY(0)}
-}
-.pimg{
-  width:54px;height:54px;border-radius:11px;
-  flex-shrink:0;
-  display:grid;place-items:center;
-  font-family:'Frank Ruhl Libre',serif;
-  font-weight:700;font-size:24px;
-  letter-spacing:-0.02em;
-  position:relative;overflow:hidden;
-}
-.pimg::after{
-  content:"";position:absolute;inset:0;border-radius:inherit;
-  border:1px solid rgba(0,0,0,.04);
-  pointer-events:none;
-}
-.pimg.t-dairy   {background:oklch(96% 0.035 95);  color:oklch(45% 0.080 75)}
-.pimg.t-cheese  {background:oklch(95% 0.045 88);  color:oklch(45% 0.090 70)}
-.pimg.t-soft    {background:oklch(96% 0.025 320); color:oklch(45% 0.080 340)}
-.pimg.t-goat    {background:oklch(95% 0.030 30);  color:oklch(45% 0.090 25)}
-.pimg.t-fresh   {background:oklch(95% 0.035 200); color:oklch(40% 0.080 220)}
-.pimg.t-pasta   {background:oklch(95% 0.040 60);  color:oklch(45% 0.090 55)}
-.pimg.t-sweet   {background:oklch(95% 0.040 350); color:oklch(45% 0.090 350)}
-.pimg.t-spread  {background:oklch(94% 0.045 110); color:oklch(40% 0.080 130)}
-.pimg.t-other   {background:var(--surface-2);     color:var(--ink-2)}
-
+/* product groups + cards */
+#plist{padding-bottom:150px}
+.group{margin-top:14px}
+.group-head{padding:4px 18px 6px;display:flex;align-items:baseline;gap:8px}
+.group-title{font-size:15px;font-weight:800;letter-spacing:-.01em}
+.group-meta{font-size:12px;color:var(--ink-3);font-weight:600}
+.pcard{background:var(--surface);margin:0 14px 8px;border-radius:16px;display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line)}
+.pcard.has-qty{border:1.5px solid #9fdfba;box-shadow:0 4px 14px rgba(37,211,102,.12)}
+.pavatar{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:800;font-size:19px}
 .pinfo{flex:1;min-width:0}
-.pname{
-  font-size:14px;font-weight:500;line-height:1.35;color:var(--ink);
-  text-wrap:pretty;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-  overflow:hidden;
-}
-.pmeta{
-  display:flex;align-items:center;gap:8px;margin-top:4px;
-}
-.psku{
-  font-size:10.5px;color:var(--ink-3);
-  font-family:ui-monospace,'SF Mono',Menlo,monospace;
-  letter-spacing:.02em;
-}
-.tag-suggested{
-  display:inline-flex;align-items:center;gap:4px;
-  font-size:10.5px;font-weight:600;color:var(--amber-ink);
-  background:var(--amber-soft);
-  padding:2px 7px;border-radius:999px;
-  border:1px solid oklch(88% 0.045 75);
-}
-.tag-suggested::before{
-  content:"";width:5px;height:5px;border-radius:50%;background:var(--amber);
-}
+.pname{font-size:14px;font-weight:600;line-height:1.3;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pmeta{display:flex;align-items:center;gap:8px;margin-top:4px}
+.psku{font-size:11px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
+.ptag{font-size:10.5px;font-weight:800;color:var(--amber-ink);background:var(--amber-bg);padding:2px 8px;border-radius:999px;border:1px solid var(--amber-line)}
+.add-btn{flex:none;background:var(--wa-soft);color:var(--wa-deep);border:1.5px solid var(--wa-line);height:44px;padding:0 18px;border-radius:12px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px}
+.add-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.6}
+.stepper{display:flex;align-items:center;gap:4px;flex:none}
+.qbtn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;font-weight:500}
+.qbtn.minus{border:1.5px solid var(--line-2);background:#fff;color:var(--ink-2)}
+.qbtn.plus{border:1.5px solid var(--wa);background:var(--wa);color:#fff}
+.qnum{min-width:40px;height:44px;padding:0 6px;font-size:17px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;display:grid;place-items:center;border-radius:8px;background:#f0f6f2}
+.empty-list{text-align:center;padding:60px 24px;color:var(--ink-3)}
+.empty-list-ico{width:56px;height:56px;border-radius:50%;background:#eef3f0;display:grid;place-items:center;margin:0 auto 12px}
+.empty-list-ico svg{width:24px;height:24px;stroke:var(--ink-4);fill:none;stroke-width:1.7}
+.empty-list-text{font-weight:600;color:var(--ink-2)}
 
-.qty{display:flex;align-items:center;gap:2px;flex-shrink:0}
-.qbtn{
-  width:32px;height:32px;border-radius:9px;
-  border:1px solid var(--line-strong);
-  background:var(--surface);
-  font-size:18px;font-weight:500;line-height:1;
-  display:grid;place-items:center;cursor:pointer;
-  color:var(--ink-2);
-  transition:transform .1s, background .15s, border-color .15s, color .15s;
-  user-select:none;
-  font-family:inherit;
-}
-.qbtn:active{transform:scale(.9)}
-.qbtn.plus.on{background:var(--brand);border-color:var(--brand);color:#fff}
-.qbtn.plus.on:active{background:var(--brand-deep)}
-.qbtn.minus{opacity:.3;pointer-events:none}
-.qbtn.minus.on{opacity:1;pointer-events:auto}
-.qnum{
-  font-size:15px;font-weight:700;min-width:24px;text-align:center;
-  color:var(--ink);font-variant-numeric:tabular-nums;
-}
-.qnum.z{color:var(--ink-4);font-weight:500}
+/* sticky bottom bar (catalog) */
+.catalog-bar{position:absolute;bottom:0;left:0;right:0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--app) 70%,rgba(245,248,246,0));z-index:120}
+.bar-btn{width:100%;padding:15px 18px;border-radius:14px;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:space-between;background:#e3ede8;color:#7d968b}
+.bar-btn.on{background:var(--green-mid);color:#fff;box-shadow:0 8px 20px rgba(12,59,43,.28)}
+.bar-btn-left{display:flex;align-items:center;gap:10px}
+.bar-btn-count{background:rgba(255,255,255,.22);min-width:24px;height:24px;padding:0 7px;border-radius:999px;font-size:13px;font-weight:800;display:grid;place-items:center}
 
-.add-all-favs-btn{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  width:calc(100% - 28px);
-  margin:14px 14px 6px;
-  padding:14px;
-  background:var(--brand);
-  border:none;border-radius:var(--r-lg);
-  color:#fff;
-  font-size:14px;font-weight:600;
-  cursor:pointer;
-  transition:transform .12s, background .15s;
-  box-shadow:0 1px 0 var(--brand-deep) inset, 0 4px 12px oklch(45% 0.05 152 / .25);
-}
-.add-all-favs-btn:active{transform:scale(.99);background:var(--brand-deep)}
-.add-all-favs-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
-
-.fav-section{margin-top:6px}
-.fav-section-title{
-  padding:14px 18px 8px;
-  font-size:11px;font-weight:700;color:var(--ink-3);
-  letter-spacing:.08em;text-transform:uppercase;
-  display:flex;align-items:center;gap:8px;
-}
-.fav-section-title::after{
-  content:"";flex:1;height:1px;background:var(--line);
-}
-
-#catalog-view{padding-bottom:96px}
-#cart-view{padding-bottom:160px}
-
-.cart-header{
-  background:var(--surface);
-  padding:14px 18px;
-  display:flex;align-items:center;gap:14px;
-  border-bottom:1px solid var(--line);
-  position:sticky;top:62px;z-index:90;
-}
-.cart-back-btn{
-  background:none;border:none;
-  font-size:13.5px;color:var(--brand-ink);
-  cursor:pointer;font-weight:600;
-  display:flex;align-items:center;gap:4px;
-  padding:4px 0;
-}
-.cart-title{font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.01em}
-.cart-summary{
-  margin-right:auto;
-  font-size:12px;color:var(--ink-3);font-weight:500;
-  font-variant-numeric:tabular-nums;
-}
-
-.cart-section{margin-top:14px}
-.cart-section-title{
-  padding:8px 18px;
-  font-size:11px;font-weight:700;color:var(--ink-3);
-  letter-spacing:.08em;text-transform:uppercase;
-  display:flex;align-items:center;gap:8px;
-}
-.cart-section-title::after{
-  content:"";flex:1;height:1px;background:var(--line);
-}
-.cart-row{
-  background:var(--surface);
-  margin:0 14px 6px;
-  border-radius:var(--r);
-  display:flex;justify-content:space-between;align-items:center;
-  padding:11px 12px;
-  border:1px solid var(--line);
-}
-.cart-row-info{flex:1;min-width:0}
-.cart-row-name{font-size:13.5px;font-weight:500;color:var(--ink)}
-.cart-row-code{
-  font-size:10.5px;color:var(--ink-3);margin-top:2px;
-  font-family:ui-monospace,'SF Mono',Menlo,monospace;
-}
-.cart-row-controls{display:flex;align-items:center;gap:2px;flex-shrink:0}
-.remove-btn{
-  background:none;border:none;color:var(--ink-4);
-  font-size:18px;cursor:pointer;
-  padding:6px;line-height:1;margin-right:4px;
-  border-radius:8px;
-  transition:color .15s, background .15s;
-}
-.remove-btn:hover{color:var(--danger);background:oklch(96% 0.025 25)}
-
-/* Cart "you may also want these" suggestions — favourites (suggested qty) not yet in the cart. */
-.cart-suggest{margin:22px 14px 6px;border-top:1px dashed var(--line-strong);padding-top:16px}
-.cart-suggest-head{
-  display:flex;align-items:center;gap:8px;padding:0 4px 10px;
-  font-size:13.5px;font-weight:700;color:var(--amber-ink);
-}
-.cart-suggest-head::before{
-  content:"";width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0;
-}
-.cart-suggest-group-title{
-  padding:10px 4px 6px;
-  font-size:11px;font-weight:700;color:var(--ink-3);
-  letter-spacing:.08em;text-transform:uppercase;
-  display:flex;align-items:center;gap:8px;
-}
-.cart-suggest-group-title::after{content:"";flex:1;height:1px;background:var(--line)}
-.suggest-row{
-  background:var(--amber-soft);
-  margin:0 0 6px;
-  border:1px solid oklch(90% 0.040 75);
-  border-radius:var(--r);
-  display:flex;justify-content:space-between;align-items:center;
-  padding:10px 12px;
-}
+/* cart */
+.cart-hdr{background:var(--surface);padding:12px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:90;border-bottom:1px solid var(--line)}
+.cart-back{display:flex;align-items:center;gap:5px;color:var(--wa-deep);font-weight:700;font-size:14px;padding:6px 4px}
+.cart-back .arr{font-size:19px}
+.cart-title{font-size:16px;font-weight:800;margin-inline-start:2px}
+.cart-sum{margin-inline-start:auto;font-size:12.5px;color:var(--ink-3);font-weight:600}
+.deadline{margin:12px 14px 0;padding:11px 13px;background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:12px;font-size:12.5px;font-weight:700;color:var(--amber-ink);display:flex;align-items:center;gap:8px}
+.deadline::before{content:"⏳";flex:none}
+.deadline.expired{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger)}
+.deadline.expired::before{content:"🔒"}
+#cart-items{padding-bottom:170px}
+.cart-empty{text-align:center;padding:70px 30px}
+.cart-empty-ico{width:64px;height:64px;border-radius:50%;background:#eef3f0;display:grid;place-items:center;margin:0 auto 14px}
+.cart-empty-ico svg{width:28px;height:28px;stroke:var(--ink-4);fill:none;stroke-width:1.6}
+.cart-empty-title{font-size:15px;font-weight:700;color:var(--ink-2)}
+.cart-empty-sub{font-size:13px;color:var(--ink-3);margin-top:6px;text-wrap:pretty}
+.cart-empty-btn{margin-top:18px;background:var(--wa);color:var(--wa-ink);font-weight:800;font-size:14px;padding:12px 24px;border-radius:12px}
+.cart-group{margin-top:14px}
+.cart-group-title{padding:2px 18px 6px;font-size:11px;font-weight:800;color:var(--ink-3);letter-spacing:.07em;display:flex;align-items:center;gap:8px}
+.cart-group-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.crow{background:var(--surface);margin:0 14px 7px;border-radius:14px;border:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 10px 10px 12px}
+.crow-info{flex:1;min-width:0}
+.crow-name{font-size:14px;font-weight:600}
+.crow-sku{font-size:11px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+.crow-ctrls{display:flex;align-items:center;gap:4px;flex:none}
+.crow-ctrls .qbtn{width:40px;height:40px;border-radius:11px;font-size:20px}
+.crow-ctrls .qnum{min-width:36px;height:40px;padding:0 5px;font-size:16px}
+.rm-btn{width:36px;height:40px;display:grid;place-items:center;margin-inline-start:2px}
+.rm-btn svg{width:19px;height:19px;stroke:var(--danger);fill:none;stroke-width:1.8}
+.suggest{margin:22px 14px 0;border-top:1px dashed var(--line-2);padding-top:16px}
+.suggest-head{display:flex;align-items:center;gap:8px;padding:0 4px 10px;font-size:14px;font-weight:800;color:var(--amber-ink)}
+.suggest-head::before{content:"";width:7px;height:7px;border-radius:50%;background:#e8a53a}
+.suggest-row{background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:12px;display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:7px}
 .suggest-info{flex:1;min-width:0}
-.suggest-name{font-size:13.5px;font-weight:500;color:var(--ink)}
-.suggest-meta{font-size:10.5px;color:var(--amber-ink);margin-top:2px;font-weight:600}
-.suggest-add{
-  flex-shrink:0;
-  background:var(--surface);color:var(--amber-ink);
-  border:1px solid oklch(85% 0.055 75);
-  border-radius:999px;
-  font-size:12.5px;font-weight:700;
-  padding:7px 14px;cursor:pointer;font-family:inherit;
-  transition:transform .1s, background .15s;
-}
-.suggest-add:active{transform:scale(.95);background:var(--amber-soft)}
+.suggest-name{font-size:13.5px;font-weight:600}
+.suggest-meta{font-size:11px;color:var(--amber-ink);font-weight:700;margin-top:2px}
+.suggest-add{flex:none;background:#fff;color:var(--amber-ink);border:1.5px solid var(--amber-line-2);border-radius:999px;font-size:13px;font-weight:800;padding:8px 15px}
+.cart-bottom{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 14px calc(16px + env(safe-area-inset-bottom));z-index:120;box-shadow:0 -6px 22px rgba(12,59,43,.07)}
+.send-btn{width:100%;padding:16px;border-radius:14px;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--wa);color:var(--wa-ink);box-shadow:0 6px 18px rgba(37,211,102,.32)}
+.send-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9}
+.send-btn:disabled{background:#eef3f0;color:var(--ink-4);box-shadow:none}
+.send-btn.danger{background:var(--danger);color:#fff;box-shadow:0 6px 18px rgba(214,69,69,.28)}
+.clear-btn{width:100%;margin-top:8px;padding:10px;color:var(--danger);font-size:13px;font-weight:700}
 
-/* Edit-deadline banner in the cart — the order's "editable until <cutoff>" notice; red once passed. */
-.edit-deadline{
-  margin:12px 14px 0;
-  padding:10px 12px;
-  background:var(--amber-soft);
-  border:1px solid oklch(88% 0.045 75);
-  border-radius:var(--r);
-  font-size:12.5px;font-weight:600;color:var(--amber-ink);
-  display:flex;align-items:center;gap:8px;line-height:1.35;
-}
-.edit-deadline::before{ content:"⏳"; font-size:14px; flex-shrink:0; }
-.edit-deadline.expired{
-  background:oklch(96% 0.03 25);
-  border-color:oklch(85% 0.08 25);
-  color:var(--danger);
-}
-.edit-deadline.expired::before{ content:"🔒"; }
+/* success */
+.success{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;text-align:center}
+.success-ico{width:90px;height:90px;border-radius:50%;background:var(--wa-soft);display:grid;place-items:center;animation:om-pop .45s cubic-bezier(.2,.9,.3,1.4) both}
+.success-ico svg{width:44px;height:44px;stroke:var(--wa);fill:none;stroke-width:2.6}
+.success-ico.neutral{background:#eef3f0}
+.success-ico.neutral svg{stroke:var(--ink-2)}
+.success-title{font-size:23px;font-weight:800;margin-top:22px;letter-spacing:-.01em}
+.success-sum{font-size:14.5px;color:var(--ink-2);margin-top:8px;line-height:1.5;text-wrap:pretty}
+.success-note{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-top:20px;font-size:13.5px;color:var(--ink-2);font-weight:600;max-width:320px;text-wrap:pretty}
+.wa-btn{margin-top:24px;width:100%;max-width:320px;background:var(--wa);color:var(--wa-ink);font-weight:800;font-size:15px;padding:15px;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 6px 18px rgba(37,211,102,.3)}
+.wa-btn svg{width:20px;height:20px;fill:currentColor}
+.new-btn{margin-top:12px;color:var(--ink-3);font-size:13.5px;font-weight:700;padding:8px}
 
-.empty-cart{
-  text-align:center;padding:80px 24px;color:var(--ink-3);
-}
-.empty-cart-icon{
-  width:60px;height:60px;border-radius:50%;
-  background:var(--surface-2);
-  display:grid;place-items:center;
-  margin:0 auto 14px;
-}
-.empty-cart-icon svg{width:26px;height:26px;stroke:var(--ink-4);fill:none;stroke-width:1.6}
-.empty-cart-text{font-size:14px;font-weight:500;color:var(--ink-2)}
-.empty-cart-sub{font-size:12px;color:var(--ink-3);margin-top:6px}
+/* sheets (keypad + clarify) */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(13,31,24,.5);display:flex;align-items:flex-end;justify-content:center;z-index:1000;animation:om-fade .2s ease}
+.sheet{background:var(--surface);border-radius:24px 24px 0 0;width:100%;max-width:440px;padding:14px 16px calc(20px + env(safe-area-inset-bottom));animation:om-sheet .28s cubic-bezier(.2,.8,.2,1)}
+.sheet.tall{max-height:82vh;overflow-y:auto;padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+.sheet-handle{width:38px;height:4px;border-radius:2px;background:var(--line-2);margin:2px auto 12px}
+.keypad-name{text-align:center;font-size:14px;font-weight:700;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.keypad-val{text-align:center;font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;margin:6px 0 4px;letter-spacing:-.02em}
+.keypad-presets{display:flex;gap:8px;justify-content:center;margin:8px 0 14px}
+.kp-preset{background:var(--wa-soft);color:var(--wa-deep);border:1.5px solid var(--wa-line);border-radius:999px;padding:8px 16px;font-size:14px;font-weight:800}
+.keypad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.kp-key{height:56px;border-radius:14px;font-size:22px;font-weight:700;color:var(--ink);background:var(--app);border:1px solid #e3ede8}
+.kp-key.back{background:#f0f6f2;border:none}
+.kp-key.blank{visibility:hidden}
+.keypad-confirm{width:100%;margin-top:12px;background:var(--wa);color:var(--wa-ink);font-weight:800;font-size:16px;padding:15px;border-radius:13px}
+.clarify-title{font-size:15.5px;font-weight:800;margin-bottom:4px;text-wrap:pretty}
+.clarify-sub{font-size:13px;color:var(--ink-3);margin-bottom:12px}
+.opt{width:100%;display:flex;align-items:center;gap:8px;padding:12px 10px;border-radius:12px;border:1px solid #eef3f0;background:#fff;margin-bottom:6px;text-align:start}
+.opt.sel{border:1.5px solid #9fdfba;background:#f3fbf6}
+.opt-mark{width:30px;flex:none;text-align:center;color:var(--wa-deep);font-size:20px}
+.opt-check{width:24px;height:24px;flex:none;border-radius:7px;display:grid;place-items:center;font-size:15px;font-weight:800;color:#fff;background:#fff;border:2px solid var(--line-2)}
+.opt.sel .opt-check{background:var(--wa);border-color:var(--wa)}
+.opt-info{flex:1;min-width:0}
+.opt-name{font-size:14.5px;font-weight:600}
+.opt-meta{font-size:11px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+.var-confirm{width:100%;margin-top:12px;background:var(--wa);color:var(--wa-ink);font-weight:800;font-size:15px;padding:14px;border-radius:13px}
+.drop-btn{width:100%;margin-top:12px;padding:14px;border-radius:12px;font-size:14.5px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2)}
+.drop-btn.danger{border-color:var(--danger-line);background:var(--danger-bg);color:var(--danger)}
+.drop-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9}
+.no-opts{text-align:center;padding:24px;color:var(--ink-3);font-size:13px}
 
-.cart-bottom{
-  position:fixed;bottom:0;left:0;right:0;
-  background:var(--surface);
-  border-top:1px solid var(--line);
-  padding:12px 14px 16px;z-index:200;
-  box-shadow:0 -4px 20px oklch(40% 0.02 95 / .06);
-}
-.cart-reset-btn{
-  width:100%;padding:11px;
-  background:none;
-  border:1px solid var(--line-strong);
-  border-radius:var(--r);
-  color:var(--ink-2);font-size:13px;font-weight:500;
-  cursor:pointer;margin-bottom:8px;
-  transition:background .15s;
-}
-.cart-reset-btn:active{background:var(--surface-2)}
+/* toast */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;white-space:nowrap;z-index:2000;box-shadow:0 8px 24px rgba(13,31,24,.3);transition:all .25s cubic-bezier(.2,.8,.2,1);opacity:0;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.toast::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--wa);flex:none}
+.toast-undo{color:#8fe6b5;font-weight:800;font-size:13px;margin-inline-start:6px}
 
-.cart-send-btn{
-  width:100%;padding:15px;
-  border-radius:var(--r);
-  background:var(--brand);
-  border:none;color:#fff;
-  font-size:15px;font-weight:700;
-  cursor:pointer;
-  display:flex;align-items:center;justify-content:center;gap:9px;
-  letter-spacing:-0.01em;
-  box-shadow:0 1px 0 var(--brand-deep) inset, 0 6px 18px oklch(45% 0.05 152 / .28);
-  transition:transform .12s, background .15s;
-}
-.cart-send-btn:active{transform:scale(.99);background:var(--brand-deep)}
-.cart-send-btn:disabled{
-  background:var(--surface-2);color:var(--ink-4);
-  cursor:default;box-shadow:none;
-}
-.cart-send-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8}
-
-.footer{
-  position:fixed;bottom:0;left:0;right:0;
-  background:linear-gradient(to top, var(--bg) 0%, var(--bg) 70%, transparent 100%);
-  padding:18px 14px 16px;z-index:200;
-}
-.footer-btn{
-  width:100%;padding:15px 18px;
-  border-radius:var(--r);
-  background:var(--brand);
-  border:none;color:#fff;
-  font-size:14.5px;font-weight:600;
-  cursor:pointer;
-  display:flex;align-items:center;justify-content:space-between;
-  letter-spacing:-0.005em;
-  box-shadow:0 1px 0 var(--brand-deep) inset, 0 6px 18px oklch(45% 0.05 152 / .28);
-  transition:transform .12s, background .15s;
-}
-.footer-btn:active{transform:scale(.99);background:var(--brand-deep)}
-.footer-btn:disabled{
-  background:var(--surface);color:var(--ink-3);
-  cursor:default;box-shadow:none;
-  border:1px solid var(--line);
-  justify-content:center;font-weight:500;
-}
-.footer-btn-left{display:flex;align-items:center;gap:10px}
-.footer-btn-count{
-  background:rgba(255,255,255,.2);
-  padding:2px 9px;border-radius:999px;
-  font-size:12px;font-weight:700;
-  font-variant-numeric:tabular-nums;
-}
-.footer-btn-arrow{font-size:17px;line-height:1}
-
-.modal{
-  position:fixed;inset:0;
-  background:oklch(20% 0.02 95 / .55);
-  display:flex;align-items:flex-end;justify-content:center;
-  z-index:1000;
-  animation:fadeIn .2s ease;
-}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.modal-content{
-  background:var(--surface);
-  border-radius:22px 22px 0 0;
-  width:100%;max-width:520px;max-height:80vh;overflow-y:auto;
-  padding:18px 18px 28px;
-  position:relative;
-  box-shadow:0 12px 40px oklch(30% 0.030 95 / .18);
-  animation:slideUp .25s cubic-bezier(.2,.8,.2,1);
-}
-@keyframes slideUp{from{transform:translateY(40px)}to{transform:translateY(0)}}
-.modal-handle{
-  width:36px;height:4px;border-radius:2px;
-  background:var(--line-strong);
-  margin:0 auto 14px;
-}
-.modal-title{
-  font-weight:700;font-size:15px;
-  margin-bottom:12px;color:var(--ink);
-  padding-left:36px;letter-spacing:-0.01em;
-}
-.modal-close{
-  position:absolute;top:18px;left:14px;
-  background:var(--surface-2);border:none;
-  width:30px;height:30px;border-radius:50%;
-  font-size:18px;cursor:pointer;color:var(--ink-2);
-  display:grid;place-items:center;line-height:1;
-}
-.suggestion-row{
-  padding:12px;
-  border-bottom:1px solid var(--line);
-  cursor:pointer;
-  border-radius:10px;
-  transition:background .12s;
-  display:flex;align-items:center;gap:12px;
-}
-.suggestion-row:active{background:var(--brand-soft)}
-.suggestion-row:last-child{border-bottom:none}
-.suggestion-pimg{
-  width:38px;height:38px;border-radius:9px;
-  background:var(--surface-2);
-  display:grid;place-items:center;
-  font-family:'Frank Ruhl Libre',serif;font-weight:700;
-  font-size:18px;color:var(--ink-2);
-  flex-shrink:0;
-}
-.suggestion-text{flex:1;min-width:0}
-.suggestion-name{font-size:14px;font-weight:500;color:var(--ink)}
-.suggestion-meta{
-  font-size:10.5px;color:var(--ink-3);margin-top:2px;
-  font-family:ui-monospace,'SF Mono',Menlo,monospace;
-}
-.suggestion-arrow{color:var(--ink-4);font-size:20px}
-.no-suggestions{text-align:center;padding:28px;color:var(--ink-3);font-size:13px}
-
-.loading{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:55vh;gap:16px;color:var(--ink-3);font-size:13px;
-}
-.spinner{
-  width:30px;height:30px;
-  border:2.5px solid var(--line);
-  border-top-color:var(--brand);
-  border-radius:50%;animation:spin .75s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.posting-overlay{
-  position:fixed;inset:0;z-index:200;
-  background:rgba(255,255,255,.93);backdrop-filter:blur(3px);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  color:var(--ink-2);font-size:15px;font-weight:600;text-align:center;padding:0 32px;
-}
-.posting-overlay.hidden{display:none}
-.posting-overlay .spinner{width:38px;height:38px;border-width:3px}
-.empty{text-align:center;padding:48px 24px;color:var(--ink-3);font-size:13.5px}
-.empty .ei{
-  width:54px;height:54px;border-radius:50%;
-  background:var(--surface-2);
-  display:grid;place-items:center;
-  margin:0 auto 12px;
-}
-.empty .ei svg{width:24px;height:24px;stroke:var(--ink-4);fill:none;stroke-width:1.6}
-.err{text-align:center;padding:48px 24px;color:var(--danger);font-size:13.5px}
-.err .ei{font-size:28px;margin-bottom:10px}
-
-.toast{
-  position:fixed;bottom:108px;left:50%;
-  transform:translateX(-50%) translateY(12px);
-  background:var(--ink);color:#fff;
-  padding:10px 18px;border-radius:999px;
-  font-size:12.5px;font-weight:500;
-  opacity:0;transition:all .22s cubic-bezier(.2,.8,.2,1);
-  pointer-events:none;white-space:nowrap;z-index:300;
-  box-shadow:0 8px 24px oklch(20% 0.02 95 / .25);
-  display:flex;align-items:center;gap:8px;
-}
-.toast::before{
-  content:"";width:6px;height:6px;border-radius:50%;
-  background:var(--brand);
-}
-.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+/* overlays */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:16px;color:var(--ink-3);font-size:13px}
+.spinner{width:32px;height:32px;border:2.5px solid var(--line);border-top-color:var(--wa);border-radius:50%;animation:om-spin .75s linear infinite}
+.posting{position:fixed;inset:0;z-index:1500;background:rgba(245,248,246,.94);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:var(--ink-2);font-size:15px;font-weight:700;text-align:center;padding:0 32px}
+.posting .spinner{width:38px;height:38px;border-width:3px}
+.errbox{text-align:center;padding:60px 28px;min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink-2)}
+.errbox .ei{font-size:32px;margin-bottom:12px}
+.errbox-text{font-size:15px;font-weight:600;text-wrap:pretty}
 </style>
 </head>
 <body>
+<div class="phone" id="phone">
 
-<div class="hdr">
-  <div class="hdr-mark" aria-hidden="true"><span id="hdr-mark-letter">·</span></div>
-  <div class="hdr-info">
-    <div class="hdr-org" id="org-name">טוען...</div>
-    <div class="hdr-sub">הזמנה חדשה</div>
+  <!-- loading / error take over the whole app on first load or fatal error -->
+  <div id="boot" class="loading"><div class="spinner"></div>טוען קטלוג...</div>
+
+  <div id="app" class="hidden">
+    <!-- HEADER -->
+    <div class="hdr" id="header">
+      <div class="hdr-logo"><span id="hdr-initial">·</span></div>
+      <div class="hdr-info">
+        <div class="hdr-name" id="hdr-name">טוען...</div>
+        <div class="hdr-status">מחובר לוואטסאפ</div>
+      </div>
+      <button class="badge" id="badge" onclick="onBadge()" aria-label="עגלה">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 6z" stroke-linejoin="round"></path><path d="M8 6V4a4 4 0 0 1 8 0v2"></path></svg>
+        <span class="badge-count" id="badge-count">0</span>
+      </button>
+    </div>
+
+    <!-- CATALOG -->
+    <div id="catalog-view">
+      <div id="clarify-box" class="clarify-box hidden"></div>
+      <div class="searchbar">
+        <div class="searchbar-inner">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <input id="search-input" class="search-input" type="text" inputmode="search" enterkeyhint="search" placeholder="חיפוש מוצר, מק״ט או ברקוד…" oninput="onSearch(this.value)" autocomplete="off">
+          <button id="search-clear" class="search-clear hidden" onclick="clearSearch()" aria-label="נקה">×</button>
+        </div>
+      </div>
+      <div id="tabs" class="tabs"></div>
+      <div id="cats" class="cats hidden"></div>
+      <div id="hero" class="hidden"></div>
+      <div id="plist"></div>
+      <div class="catalog-bar" id="catalog-bar">
+        <button class="bar-btn" id="bar-btn" onclick="goCart()">בחר מוצרים כדי להתחיל</button>
+      </div>
+    </div>
+
+    <!-- CART -->
+    <div id="cart-view" class="hidden">
+      <div class="cart-hdr">
+        <button class="cart-back" onclick="goCatalog()"><span class="arr">→</span>לקטלוג</button>
+        <span class="cart-title">העגלה שלי</span>
+        <span class="cart-sum" id="cart-sum"></span>
+      </div>
+      <div id="cart-deadline" class="deadline hidden"></div>
+      <div id="cart-items"></div>
+      <div class="cart-bottom" id="cart-bottom"></div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="success-view" class="hidden"></div>
   </div>
-  <div class="cart-pill" id="badge" onclick="if(Object.keys(qty).length)switchView('cart')">
-    <svg viewBox="0 0 24 24"><path d="M3 6h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 6z" stroke-linejoin="round"></path><path d="M8 6V4a4 4 0 0 1 8 0v2"></path></svg>
-    <span class="cart-pill-count" id="badge-count">0</span>
-  </div>
+
+  <!-- sheets + toast live outside the views so they overlay everything -->
+  <div id="keypad" class="hidden"></div>
+  <div id="clarify" class="hidden"></div>
+  <div id="posting" class="posting hidden"><div class="spinner"></div><span id="posting-text">שולח את ההזמנה...</span></div>
+  <div id="toast" class="toast"><span></span></div>
 </div>
-
-<div id="unmatched-box" class="unmatched-box hidden"></div>
-<div id="allvariants-box" class="unmatched-box hidden"></div>
-
-<div id="catalog-view">
-  <div class="search-bar">
-    <svg class="search-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
-    <input id="search-input" class="search-input" type="search" inputmode="search" enterkeyhint="search" placeholder="חיפוש מוצר…" oninput="onSearch(this.value)" autocomplete="off">
-    <button id="search-clear" class="search-clear hidden" onclick="clearSearch()" aria-label="נקה חיפוש">×</button>
-  </div>
-  <div id="mkt-tabs" class="mkt-tabs"></div>
-  <div id="cat-bar" class="cat-bar"></div>
-  <div id="plist"></div>
-</div>
-
-<div id="cart-view" class="hidden">
-  <div class="cart-header">
-    <button class="cart-back-btn" onclick="switchView('catalog')">
-      <span style="font-size:18px;line-height:1">←</span> חזור לקטלוג
-    </button>
-    <span class="cart-title">העגלה שלי</span>
-    <span class="cart-summary" id="cart-summary"></span>
-  </div>
-  <div id="edit-deadline" class="edit-deadline hidden"></div>
-  <div id="cart-items"></div>
-  <div class="cart-bottom" id="cart-bottom">
-    <button class="cart-reset-btn" onclick="clearCart()">אפס סל</button>
-    <button class="cart-send-btn" id="cart-send-btn" onclick="sendOrder()" disabled>
-      <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linejoin="round" stroke-linecap="round"></path></svg>
-      שלח הזמנה
-    </button>
-  </div>
-</div>
-
-<div class="footer" id="sticky-footer">
-  <button class="footer-btn" id="footer-btn" onclick="switchView('cart')" disabled>
-    בחר מוצרים להזמנה
-  </button>
-</div>
-
-<div id="unmatched-modal" class="modal hidden" onclick="if(event.target===this)closeUnmatchedModal()">
-  <div class="modal-content">
-    <div class="modal-handle"></div>
-    <button class="modal-close" onclick="closeUnmatchedModal()">×</button>
-    <div class="modal-title" id="modal-title"></div>
-    <div id="suggestions-list"></div>
-  </div>
-</div>
-
-<div class="posting-overlay hidden" id="posting-overlay">
-  <div class="spinner"></div>
-  <span id="posting-text">שולח את ההזמנה...</span>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-const CAT_TINT = {
-  MOZZARELLA:'t-cheese', WHITE_BRINE:'t-cheese', HARD_CHEESE:'t-cheese',
-  CREAM_CHEESE:'t-soft', RICOTTA:'t-soft', HALLOUMI:'t-pasta',
-  GOAT_SHEEP:'t-goat',
-  CREAM:'t-dairy', YOGURT:'t-dairy', MILK:'t-fresh', BUTTER:'t-pasta',
-  DESSERTS:'t-sweet',
-  PASTA:'t-pasta',
-  SPREADS:'t-spread',
-  OTHER:'t-other'
-};
-
-// Point each deployed page at its matching backend by hostname.
+// ── Point each deployed page at its matching backend by hostname ──
 // order-dev.ordexai.com → dev API; everything else (order.ordexai.com) → prod API.
 const API = location.hostname === 'order-dev.ordexai.com'
   ? 'https://9q6xovizff.execute-api.eu-west-1.amazonaws.com'   // dev
   : 'https://nbe30y2d7e.execute-api.eu-west-1.amazonaws.com';  // prod
 
+// Avatar tints per category CODE (real categories carry no colours). Fallback = OTHER.
+const CAT_COLORS = {
+  MOZZARELLA:{bg:'#fef3e6',fg:'#b46a1e'}, WHITE_BRINE:{bg:'#eef4fb',fg:'#2f6bb0'},
+  HARD_CHEESE:{bg:'#fdf2d9',fg:'#a67d15'}, CREAM_CHEESE:{bg:'#f3eefb',fg:'#7a4fb0'},
+  RICOTTA:{bg:'#f7f0fb',fg:'#8a4fa0'}, HALLOUMI:{bg:'#f1f7e8',fg:'#5a7a24'},
+  GOAT_SHEEP:{bg:'#fbeaea',fg:'#b4453e'}, CREAM:{bg:'#f3eefb',fg:'#7a4fb0'},
+  YOGURT:{bg:'#eafaf0',fg:'#0c7a45'}, MILK:{bg:'#eaf6fb',fg:'#2b7fa3'},
+  BUTTER:{bg:'#fdf2d9',fg:'#a67d15'}, DESSERTS:{bg:'#fbeaf3',fg:'#b03a78'},
+  PASTA:{bg:'#fdf4e3',fg:'#8a5a12'}, SPREADS:{bg:'#f1f7e8',fg:'#5a7a24'},
+  OTHER:{bg:'#eef3f0',fg:'#3f574c'},
+};
+
+// ── State ──
 let catalog = null;
-let qty = {};
+let qty = {};                 // sku_code -> quantity
+let activeView = 'catalog';
 let activeTab = null;
 let activeCat = null;
-let activeView = 'catalog';
-let unmatchedItems = [];
-// "מכל סוג" / "מסוג" items → each rendered as a checkbox multi-select (mirrors the chat Flow).
-let allVariantsItems = [];
-// Clarification picks (raw customer text → chosen sku) sent with the order so the backend learns
-// them as contact aliases, so next time the same wording auto-matches.
-let resolvedAliases = [];
-let droppedUnmatched = [];   // raw texts the customer marked "not in the list" — sent to the server to record as unmatched
-// Edit deadline (unix seconds) for an order being edited — null for new orders. The page shows it
-// and blocks a submit that slips past it (the server re-checks isOrderEditable authoritatively too).
-let editUntilEpoch = null;
-// Live product-search query (empty = browse by tab; non-empty = show cross-market matches).
 let searchQuery = '';
+let unmatchedItems = [];      // open clarification items (server) — spliced as resolved
+let allVariantsItems = [];    // open "מכל סוג" items (server) — spliced as resolved
+let resolvedAliases = [];     // raw customer text -> chosen sku (learned as contact aliases)
+let droppedUnmatched = [];    // raw texts the customer marked "not in the list"
+let editUntilEpoch = null;    // edit deadline (unix seconds); null for new orders
+let keypad = null;            // { code } while the numeric sheet is open
+let keypadBuf = '';
+let clarify = null;           // { kind:'unmatched'|'variants', idx }
+let variantSel = {};          // sku_code -> true (checkbox multi-select)
+let lastRemoved = null;       // { code, qty } for the undo toast
+let pendingRequestId = null;  // reused across retries so the backend dedupes
+let submitted = null;         // { status, items, units, cancel } → success screen
+let toastTimer = null, deadlineTimer = null;
 
+// ── boot ──
 async function init() {
-  showLoading();
   const token = new URLSearchParams(location.search).get('t');
-
-  if (!token) { showError('קישור לא תקין — חסר מזהה'); return; }
-
+  if (!token) { fatal('קישור לא תקין — חסר מזהה'); return; }
   try {
     const r = await fetch(API + '/catalog?token=' + encodeURIComponent(token));
-    if (r.status === 401) { showError('הקישור פג תוקף — בקש קישור חדש'); return; }
+    if (r.status === 401) { fatal('הקישור פג תוקף — בקש קישור חדש'); return; }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     catalog = await r.json();
   } catch (e) {
-    showError('שגיאה בטעינת הקטלוג. בדוק חיבור או נסה שוב.');
     console.error(e);
+    fatal('שגיאה בטעינת הקטלוג. בדוק חיבור או נסה שוב.');
     return;
   }
 
-  unmatchedItems = [...(catalog.unmatchedItems || [])];
+  unmatchedItems   = [...(catalog.unmatchedItems || [])];
   allVariantsItems = [...(catalog.allVariantsItems || [])];
-  editUntilEpoch = catalog.editUntilEpoch || null;
+  editUntilEpoch   = catalog.editUntilEpoch || null;
 
-  // Favourites tab: show items with the highest suggested quantity first.
   if (Array.isArray(catalog.favorites)) {
     catalog.favorites.sort((a, b) => (b.suggested_qty || 0) - (a.suggested_qty || 0));
   }
-
   if (catalog.existingOrder) {
-    catalog.existingOrder.forEach(item => { qty[item.sku_code] = item.quantity; });
+    catalog.existingOrder.forEach(it => { qty[it.sku_code] = it.quantity; });
   }
 
   const hasFavorites = catalog.favorites && catalog.favorites.length > 0;
-  const hasSession = catalog.existingOrder !== null;
+  const hasSession   = catalog.existingOrder !== null;
+  const hasClarify   = unmatchedItems.length > 0 || allVariantsItems.length > 0;
+  const editMarket   = (hasSession && catalog.existingOrder.length > 0) ? catalog.existingOrder[0].market_type_id : null;
+  if (editMarket && !hasClarify)      activeTab = editMarket;
+  else if (hasFavorites)              activeTab = 'favorites';
+  else                                activeTab = (catalog.marketTypes[0] || {}).id;
 
-  const hasClarifications = unmatchedItems.length > 0 || allVariantsItems.length > 0;
-  const editMarket = (hasSession && catalog.existingOrder.length > 0)
-    ? catalog.existingOrder[0].market_type_id
-    : null;
-  if (editMarket && !hasClarifications) {
-    activeTab = editMarket;
-  } else if (hasFavorites) {
-    // Clarifications present (or no real edit-market) → land on the customer's regular items, which
-    // are never empty, instead of a market/category filter that can resolve to an empty list.
-    activeTab = 'favorites';
-  } else {
-    activeTab = catalog.marketTypes[0]?.id;
-  }
+  document.getElementById('hdr-name').textContent = catalog.org.name || '';
+  document.getElementById('hdr-initial').textContent = (catalog.org.name || 'ר')[0];
+  document.title = 'הזמנה — ' + (catalog.org.name || '');
 
-  document.getElementById('org-name').textContent = catalog.org.name;
-  document.getElementById('hdr-mark-letter').textContent = (catalog.org.name || 'ר')[0];
-  document.title = 'הזמנה — ' + catalog.org.name;
+  document.getElementById('boot').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  show('catalog');
 
-  renderUnmatched();
-  renderAllVariants();
-  renderTabs();
-  renderContent();
-  updateFooter();
+  // Editing an order with nothing to clarify → open straight to the cart to review/change.
+  if (catalog.existingOrder && catalog.existingOrder.length > 0 && !hasClarify) show('cart');
 
-  // Editing/changing an order (a confirmed session via the token, OR pre-filled in-progress
-  // items) → open straight to the cart so the customer sees the current order to review/change.
-  // If items still need clarifying, stay on the catalog so those can be resolved first.
-  if (catalog.existingOrder && catalog.existingOrder.length > 0 && unmatchedItems.length === 0 && allVariantsItems.length === 0) {
-    switchView('cart');
-  }
-
-  // Re-evaluate the edit deadline periodically so the cart reflects it lapsing while the page is open.
-  if (editUntilEpoch) setInterval(applyEditDeadlineState, 30000);
+  if (editUntilEpoch) deadlineTimer = setInterval(applyEditDeadlineState, 30000);
 }
 
+// ── shared lookups ──
 function findSku(code) {
   let s = catalog.skus.find(s => s.sku_code === code);
   if (s) return s;
-  s = catalog.favorites?.find(f => f.sku_code === code);
+  s = catalog.favorites && catalog.favorites.find(f => f.sku_code === code);
   if (s) return s;
-  s = catalog.existingOrder?.find(e => e.sku_code === code);
+  s = catalog.existingOrder && catalog.existingOrder.find(e => e.sku_code === code);
   if (s) return s;
   return { sku_code: code, name: code, market_type_id: null };
 }
+// Customer-facing product code: the maintained barcode when present, else the internal SKU code.
+function displayCode(code) {
+  const s = findSku(code);
+  return (s && s.barcode) ? s.barcode : code;
+}
+function findCat(id) { return catalog.categories.find(c => c.id === id); }
+function catColorForCode(code) {
+  const s = findSku(code);
+  const c = s && findCat(s.category_id);
+  return CAT_COLORS[c && c.code] || CAT_COLORS.OTHER;
+}
+function marketName(id) {
+  if (!id) return 'אחר';
+  const m = catalog.marketTypes.find(m => String(m.id) === String(id));
+  return m ? m.name : 'אחר';
+}
+function isEditOrder() { return !!(catalog && catalog.sessionId); }
+function isEditExpired() { return editUntilEpoch != null && (Date.now() / 1000) > editUntilEpoch; }
+function units() { return Object.values(qty).reduce((a, b) => a + b, 0); }
+function lines() { return Object.entries(qty).filter(([, q]) => q > 0); }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function js(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
-// Generic market-type label resolver: market_type_id -> localized market name (e.g. מדף / מעדניה).
-// String-compared so it is robust to id type. Used wherever a product needs its market shown.
-function marketName(marketTypeId) {
-  if (!marketTypeId) return '';
-  const mt = catalog.marketTypes.find(m => String(m.id) === String(marketTypeId));
-  return mt ? mt.name : '';
+// ── view switching ──
+function show(view) {
+  activeView = view;
+  document.getElementById('header').classList.toggle('hidden', view === 'success');
+  document.getElementById('catalog-view').classList.toggle('hidden', view !== 'catalog');
+  document.getElementById('cart-view').classList.toggle('hidden', view !== 'cart');
+  document.getElementById('success-view').classList.toggle('hidden', view !== 'success');
+  if (view === 'catalog') renderCatalog();
+  if (view === 'cart') { renderCart(); applyEditDeadlineState(); }
+  if (view === 'success') renderSuccess();
+  window.scrollTo(0, 0);
+}
+function goCart() { if (lines().length || isEditOrder()) show('cart'); }
+function goCatalog() { show('catalog'); }
+function onBadge() { if (lines().length || isEditOrder()) show('cart'); }
+
+// ══════════════════ CATALOG ══════════════════
+function renderCatalog() {
+  renderClarifyBox();
+  const searching = !!searchQuery;
+  document.getElementById('tabs').classList.toggle('hidden', searching);
+  document.getElementById('cats').classList.toggle('hidden', searching || activeTab === 'favorites' || !activeTab);
+  document.getElementById('hero').classList.toggle('hidden', searching || activeTab !== 'favorites' || catalog.existingOrder !== null);
+  if (!searching) { renderTabs(); if (activeTab !== 'favorites') renderCats(); renderHero(); }
+  renderPlist();
+  updateBars();
+}
+
+function renderClarifyBox() {
+  const box = document.getElementById('clarify-box');
+  const rows = [];
+  unmatchedItems.forEach((u, i) => rows.push(
+    '<div class="clarify-row"><span class="clarify-row-label">❓ ' + esc(u.text) + '</span>' +
+    '<button class="clarify-cta" onclick="openClarify(\'unmatched\',' + i + ')">התאם</button></div>'));
+  allVariantsItems.forEach((v, i) => rows.push(
+    '<div class="clarify-row"><span class="clarify-row-label">🧀 ' + esc(v.keyword) + ' — מכל סוג</span>' +
+    '<button class="clarify-cta" onclick="openClarify(\'variants\',' + i + ')">בחר סוגים</button></div>'));
+  if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  box.classList.remove('hidden');
+  box.innerHTML =
+    '<div class="clarify-head"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01" stroke-linecap="round"></path></svg>' +
+    'צריך את העזרה שלך · ' + rows.length + '</div>' + rows.join('');
 }
 
 function renderTabs() {
-  const container = document.getElementById('mkt-tabs');
-  container.innerHTML = '';
+  const el = document.getElementById('tabs');
+  const tabs = [];
+  if (catalog.favorites && catalog.favorites.length) {
+    tabs.push({ id: 'favorites', label: 'הקבועים שלי', dot: true });
+  }
+  catalog.marketTypes.forEach(m => tabs.push({ id: m.id, label: m.name, dot: false }));
+  el.innerHTML = tabs.map(t =>
+    '<button class="tab' + (String(activeTab) === String(t.id) ? ' on' : '') + '" onclick="switchTab(\'' + js(t.id) + '\')">' +
+    esc(t.label) + (t.dot ? '<span class="tab-dot"></span>' : '') + '</button>').join('');
+}
 
-  const hasFavorites = catalog.favorites && catalog.favorites.length > 0;
-  if (hasFavorites) {
-    const tab = document.createElement('div');
-    tab.className = 'mkt-tab' + (activeTab === 'favorites' ? ' on' : '');
-    tab.innerHTML = 'קבועים<span class="tab-dot"></span>';
-    tab.dataset.id = 'favorites';
-    tab.onclick = () => switchTab('favorites');
-    container.appendChild(tab);
+function renderCats() {
+  const el = document.getElementById('cats');
+  const inMkt = catalog.skus.filter(s => s.market_type_id === activeTab);
+  const catIds = [...new Set(inMkt.map(s => s.category_id))];
+  if (!catIds.length) { el.classList.add('hidden'); el.innerHTML = ''; activeCat = null; return; }
+  if (!activeCat || !catIds.includes(activeCat)) activeCat = catIds[0];
+  el.classList.remove('hidden');
+  el.innerHTML = catalog.categories.filter(c => catIds.includes(c.id)).map(c =>
+    '<button class="pill' + (activeCat === c.id ? ' on' : '') + '" onclick="switchCat(\'' + js(c.id) + '\')">' + esc(c.name || c.code) + '</button>').join('');
+}
+
+function renderHero() {
+  const el = document.getElementById('hero');
+  if (searchQuery || activeTab !== 'favorites' || catalog.existingOrder !== null || !(catalog.favorites || []).length) {
+    el.classList.add('hidden'); el.innerHTML = ''; return;
+  }
+  const favUnits = catalog.favorites.reduce((a, f) => a + (f.suggested_qty || 0), 0);
+  el.classList.remove('hidden');
+  el.className = 'hero';
+  el.innerHTML =
+    '<div class="hero-kick">ההזמנה הקבועה שלי</div>' +
+    '<div class="hero-line">' + catalog.favorites.length + ' מוצרים קבועים · ' + favUnits + ' יחידות לפי ההרגל שלך</div>' +
+    '<div class="hero-btns">' +
+      '<button class="hero-go" onclick="adopt(true)"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>אמץ והמשך לעגלה</button>' +
+      '<button class="hero-stay" onclick="adopt(false)">אמץ כאן</button>' +
+    '</div>';
+}
+
+function renderPlist() {
+  const el = document.getElementById('plist');
+  let groups = [];
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    const m = catalog.skus.filter(s =>
+      (s.name && s.name.toLowerCase().includes(q)) ||
+      (s.sku_code && s.sku_code.toLowerCase().includes(q)) ||
+      (s.barcode && s.barcode.toLowerCase().includes(q)));
+    if (!m.length) { el.innerHTML = emptyList('לא נמצאו מוצרים'); return; }
+    groups = [{ title: 'תוצאות חיפוש', meta: m.length + ' מוצרים', items: m.map(s => ({ code: s.sku_code, name: s.name })) }];
+  } else if (activeTab === 'favorites') {
+    const showTag = catalog.existingOrder === null;   // suggested-qty tags only for new orders
+    const byMkt = {};
+    catalog.favorites.forEach(f => { (byMkt[f.market_type_id] = byMkt[f.market_type_id] || []).push(f); });
+    groups = Object.entries(byMkt).map(([mkt, items]) => ({
+      title: marketName(mkt), meta: items.length + ' מוצרים',
+      items: items.map(f => ({ code: f.sku_code, name: f.name, suggested: showTag ? f.suggested_qty : 0 })),
+    }));
+  } else {
+    const inMkt = catalog.skus.filter(s => s.market_type_id === activeTab);
+    const catIds = [...new Set(inMkt.map(s => s.category_id))];
+    if (!activeCat || !catIds.includes(activeCat)) activeCat = catIds[0];
+    const skus = inMkt.filter(s => s.category_id === activeCat);
+    if (!skus.length) { el.innerHTML = emptyList('אין מוצרים בקטגוריה זו'); return; }
+    const cat = findCat(activeCat);
+    groups = [{ title: cat ? (cat.name || cat.code) : '', meta: marketName(activeTab) + ' · ' + skus.length + ' מוצרים',
+      items: skus.map(s => ({ code: s.sku_code, name: s.name })) }];
   }
 
-  catalog.marketTypes.forEach(mt => {
-    const tab = document.createElement('div');
-    tab.className = 'mkt-tab' + (activeTab === mt.id ? ' on' : '');
-    tab.textContent = mt.name;
-    tab.dataset.id = mt.id;
-    tab.onclick = () => switchTab(mt.id);
-    container.appendChild(tab);
-  });
+  el.innerHTML = groups.map(g =>
+    '<div class="group">' +
+      '<div class="group-head"><span class="group-title">' + esc(g.title) + '</span><span class="group-meta">' + esc(g.meta) + '</span></div>' +
+      g.items.map(p => productCard(p.code, p.name, p.suggested)).join('') +
+    '</div>').join('');
 }
 
-function switchTab(tabId) {
-  resetSearch(); // leaving search to browse a market
-  activeTab = tabId;
-  activeCat = null;
-  document.querySelectorAll('.mkt-tab').forEach(t =>
-    t.classList.toggle('on', t.dataset.id === String(tabId))
-  );
-  renderContent();
+function emptyList(text) {
+  return '<div class="empty-list"><div class="empty-list-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div><div class="empty-list-text">' + esc(text) + '</div></div>';
 }
 
-// ── Product search (supermarket-style: type → cross-market matches with one-tap add) ──
-function resetSearch() {
-  searchQuery = '';
-  const inp = document.getElementById('search-input'); if (inp) inp.value = '';
-  const clr = document.getElementById('search-clear'); if (clr) clr.classList.add('hidden');
+function productCard(code, name, suggested) {
+  const col = catColorForCode(code);
+  const initial = (name || '?').trim()[0] || '·';
+  const tag = (suggested && !(qty[code] > 0)) ? '<span class="ptag">מוצע ' + suggested + '</span>' : '';
+  return '<div class="pcard' + (qty[code] > 0 ? ' has-qty' : '') + '" data-code="' + esc(code) + '">' +
+    '<div class="pavatar" style="background:' + col.bg + ';color:' + col.fg + '">' + esc(initial) + '</div>' +
+    '<div class="pinfo"><div class="pname">' + esc(name) + '</div>' +
+      '<div class="pmeta"><span class="psku">' + esc(displayCode(code)) + '</span>' + tag + '</div></div>' +
+    '<div class="pcard-action">' + cardAction(code) + '</div></div>';
 }
 
+function cardAction(code) {
+  const q = qty[code] || 0;
+  if (q <= 0) {
+    return '<button class="add-btn" onclick="add(\'' + js(code) + '\')"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>הוסף</button>';
+  }
+  return '<div class="stepper">' +
+    '<button class="qbtn minus" onclick="dec(\'' + js(code) + '\')" aria-label="הפחת">−</button>' +
+    '<button class="qnum" onclick="openKeypad(\'' + js(code) + '\')">' + q + '</button>' +
+    '<button class="qbtn plus" onclick="inc(\'' + js(code) + '\')" aria-label="הוסף">+</button></div>';
+}
+
+// Update one catalog card's action + highlight in place (no list re-render → no flicker / focus loss).
+function refreshCard(code) {
+  const card = document.querySelector('#plist .pcard[data-code="' + (window.CSS && CSS.escape ? CSS.escape(code) : code) + '"]');
+  if (!card) return;
+  card.classList.toggle('has-qty', (qty[code] || 0) > 0);
+  const act = card.querySelector('.pcard-action');
+  if (act) act.innerHTML = cardAction(code);
+  // A favourite card's "מוצע" tag disappears once it has a quantity.
+  const meta = card.querySelector('.pmeta .ptag');
+  if (meta && qty[code] > 0) meta.remove();
+}
+
+function updateBars() {
+  const n = lines().length, u = units();
+  const badge = document.getElementById('badge');
+  document.getElementById('badge-count').textContent = n;
+  badge.classList.toggle('on', n > 0 || isEditOrder());
+  const bar = document.getElementById('bar-btn');
+  if (n > 0) {
+    bar.className = 'bar-btn on';
+    bar.innerHTML = '<span class="bar-btn-left"><span class="bar-btn-count">' + n + '</span>המשך לעגלה · ' + u + ' יחידות</span><span style="font-size:19px">←</span>';
+  } else if (isEditOrder()) {
+    bar.className = 'bar-btn on';
+    bar.innerHTML = '<span class="bar-btn-left">המשך לעגלה</span><span style="font-size:19px">←</span>';
+  } else {
+    bar.className = 'bar-btn';
+    bar.innerHTML = 'בחר מוצרים כדי להתחיל';
+  }
+}
+
+// ── quantity actions ──
+const MAX_QTY = 9999; // must match the backend applyWebOrder MAX_QTY — a larger qty is dropped server-side
+function setQty(code, val) {
+  if (val <= 0) delete qty[code]; else qty[code] = Math.min(MAX_QTY, val);
+}
+function applyQtyChange(code, opts) {
+  refreshCard(code);
+  updateBars();
+  if (activeView === 'cart') renderCart();
+  if (opts && opts.toast) toast(opts.toast);
+}
+function add(code) { setQty(code, (qty[code] || 0) + 1); applyQtyChange(code, { toast: findSku(code).name + ' נוסף לסל' }); }
+function inc(code) { const n = (qty[code] || 0) + 1; setQty(code, n); applyQtyChange(code, { toast: findSku(code).name + ' × ' + n }); }
+function dec(code) { setQty(code, (qty[code] || 0) - 1); applyQtyChange(code); }
+function removeFromCart(code) {
+  const prev = qty[code] || 0;
+  setQty(code, 0);
+  lastRemoved = { code, qty: prev };
+  refreshCard(code); updateBars(); renderCart();
+  toast('הוסר מהעגלה', true);
+}
+function undoRemove() {
+  if (!lastRemoved) return;
+  const code = lastRemoved.code;
+  setQty(code, lastRemoved.qty);
+  lastRemoved = null;
+  clearToast();
+  refreshCard(code); updateBars();
+  if (activeView === 'cart') renderCart();
+}
+function addSuggested(code, q) { setQty(code, q); refreshCard(code); updateBars(); renderCart(); toast(findSku(code).name + ' × ' + q); }
+
+// ── fastest path: adopt suggested quantities ──
+function adopt(go) {
+  (catalog.favorites || []).forEach(f => { qty[f.sku_code] = f.suggested_qty; });
+  toast(go ? 'אומצו הכמויות המוצעות' : 'אומצו הכמויות — הישאר לעריכה');
+  if (go) show('cart'); else { renderPlist(); updateBars(); }
+}
+
+// ── search ──
 function onSearch(v) {
   searchQuery = (v || '').trim();
-  const clr = document.getElementById('search-clear'); if (clr) clr.classList.toggle('hidden', !searchQuery);
-  renderContent();
+  document.getElementById('search-clear').classList.toggle('hidden', !searchQuery);
+  renderCatalog();
 }
-
-function clearSearch() { resetSearch(); renderContent(); }
-
-function renderSearchResults() {
-  const list = document.getElementById('plist');
-  const q = searchQuery.toLowerCase();
-  const matches = catalog.skus.filter(s =>
-    (s.name && s.name.toLowerCase().includes(q)) ||
-    (s.sku_code && s.sku_code.toLowerCase().includes(q))
-  );
-  list.innerHTML = '';
-  if (!matches.length) {
-    list.innerHTML = '<div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div>לא נמצאו מוצרים</div>';
-    return;
-  }
-  const title = document.createElement('div');
-  title.className = 'sec-title';
-  title.innerHTML = '<span class="sec-title-main">תוצאות חיפוש</span><span class="sec-title-meta">' + matches.length + ' מוצרים</span>';
-  list.appendChild(title);
-  matches.forEach((sku, idx) => list.appendChild(createProductCard(sku.sku_code, sku.name, idx)));
+function clearSearch() {
+  searchQuery = '';
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').classList.add('hidden');
+  renderCatalog();
 }
-
-function renderContent() {
-  const catBar = document.getElementById('cat-bar');
-  // Active search overrides tabs: show cross-market matches, hide the category bar.
-  if (searchQuery) {
-    catBar.innerHTML = '';
-    catBar.style.display = 'none';
-    renderSearchResults();
-    return;
-  }
-  if (activeTab === 'favorites') {
-    catBar.innerHTML = '';
-    catBar.style.display = 'none';
-    renderFavoritesTab();
-  } else {
-    catBar.style.display = '';
-    renderCategoryBar();
-    renderMarketTab();
-  }
+function switchTab(id) {
+  clearSearch();
+  activeTab = id; activeCat = null;
+  renderCatalog();
 }
+function switchCat(id) { activeCat = id; renderCatalog(); }
 
-function renderCategoryBar() {
-  const bar = document.getElementById('cat-bar');
-  const skusInMarket = catalog.skus.filter(s => s.market_type_id === activeTab);
-  const catIds = [...new Set(skusInMarket.map(s => s.category_id))];
-  const cats = catalog.categories.filter(c => catIds.includes(c.id));
-
-  bar.innerHTML = '';
-  if (!cats.length) { activeCat = null; return; }
-
-  if (!activeCat || !catIds.includes(activeCat)) activeCat = cats[0].id;
-
-  cats.forEach(cat => {
-    const pill = document.createElement('div');
-    pill.className = 'cat-pill' + (activeCat === cat.id ? ' on' : '');
-    pill.textContent = cat.name || cat.code;
-    pill.dataset.id = cat.id;
-    pill.onclick = () => {
-      activeCat = cat.id;
-      document.querySelectorAll('.cat-pill').forEach(p =>
-        p.classList.toggle('on', p.dataset.id === cat.id)
-      );
-      renderMarketTab();
-    };
-    bar.appendChild(pill);
-  });
+// ── keypad sheet ──
+function openKeypad(code) { keypad = { code }; keypadBuf = String(qty[code] || ''); renderKeypad(); }
+function closeKeypad() { keypad = null; keypadBuf = ''; document.getElementById('keypad').classList.add('hidden'); }
+function keyTap(d) {
+  if (d === 'back') keypadBuf = keypadBuf.slice(0, -1);
+  else if ((keypadBuf + d).length <= 4) keypadBuf = (keypadBuf === '0' ? '' : keypadBuf) + d;
+  document.getElementById('kp-val').textContent = keypadBuf || '0';
 }
-
-function renderMarketTab() {
-  const list = document.getElementById('plist');
-  const skus = catalog.skus.filter(s =>
-    s.market_type_id === activeTab && s.category_id === activeCat
-  );
-
-  if (!skus.length) {
-    list.innerHTML = '<div class="empty"><div class="ei"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div>אין מוצרים בקטגוריה זו</div>';
-    return;
-  }
-
-  list.innerHTML = '';
-  const mt = catalog.marketTypes.find(m => m.id === activeTab);
-  const cat = catalog.categories.find(c => c.id === activeCat);
-
-  const title = document.createElement('div');
-  title.className = 'sec-title';
-  title.innerHTML =
-    '<span class="sec-title-main">' + (cat?.name || '') + '</span>' +
-    '<span class="sec-title-meta">' + (mt?.name || '') + ' · ' + skus.length + ' מוצרים</span>';
-  list.appendChild(title);
-
-  skus.forEach((sku, idx) => {
-    list.appendChild(createProductCard(sku.sku_code, sku.name, idx));
-  });
-}
-
-function renderFavoritesTab() {
-  const list = document.getElementById('plist');
-  list.innerHTML = '';
-  const hasSession = catalog.existingOrder !== null;
-
-  if (!hasSession) {
-    const btn = document.createElement('button');
-    btn.className = 'add-all-favs-btn';
-    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>אמץ כמויות מוצעות';
-    btn.onclick = adoptSuggestedQuantities;
-    list.appendChild(btn);
-  }
-
-  const grouped = {};
-  catalog.favorites.forEach(fav => {
-    const mtId = fav.market_type_id;
-    if (!grouped[mtId]) grouped[mtId] = [];
-    grouped[mtId].push(fav);
-  });
-
-  Object.entries(grouped).forEach(([mtId, favs]) => {
-    const mt = catalog.marketTypes.find(m => m.id === mtId);
-    const section = document.createElement('div');
-    section.className = 'fav-section';
-
-    const title = document.createElement('div');
-    title.className = 'fav-section-title';
-    title.textContent = (mt?.name || 'אחר') + ' · ' + favs.length + ' מוצרים';
-    section.appendChild(title);
-
-    favs.forEach((fav, idx) => {
-      const sugQty = hasSession ? null : fav.suggested_qty;
-      section.appendChild(createProductCard(fav.sku_code, fav.name, idx, sugQty));
-    });
-
-    list.appendChild(section);
-  });
-}
-
-function createProductCard(skuCode, name, idx, suggestedQty) {
-  const q = qty[skuCode] || 0;
-  const card = document.createElement('div');
-  card.className = 'pcard' + (q > 0 ? ' has-qty' : '');
-  card.style.animationDelay = (Math.min(idx, 12) * 22) + 'ms';
-  card.dataset.code = skuCode;
-
-  const sku = catalog.skus.find(s => s.sku_code === skuCode);
-  const cat = sku ? catalog.categories.find(c => c.id === sku.category_id) : null;
-  const tint = (cat && CAT_TINT[cat.code]) || 't-other';
-  const initial = (name || '?').trim()[0] || '·';
-
-  const safeCode = skuCode.replace(/'/g, "\\'");
-  const sugHtml = (suggestedQty && q === 0)
-    ? '<span class="tag-suggested">מוצע ' + suggestedQty + '</span>'
-    : '';
-
-  card.innerHTML =
-    '<div class="pimg ' + tint + '">' + escapeHtml(initial) + '</div>' +
-    '<div class="pinfo">' +
-      '<div class="pname">' + escapeHtml(name) + '</div>' +
-      '<div class="pmeta">' +
-        '<span class="psku">' + escapeHtml(skuCode) + '</span>' +
-        sugHtml +
-      '</div>' +
-    '</div>' +
-    '<div class="qty">' +
-      '<button class="qbtn minus' + (q > 0 ? ' on' : '') + '" onclick="chg(\'' + safeCode + '\',-1)" aria-label="הפחת">−</button>' +
-      '<span class="qnum' + (q === 0 ? ' z' : '') + '" id="q' + skuCode + '">' + q + '</span>' +
-      '<button class="qbtn plus' + (q > 0 ? ' on' : '') + '" onclick="chg(\'' + safeCode + '\',1)" aria-label="הוסף">+</button>' +
-    '</div>';
-
-  return card;
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function chg(code, delta) {
-  const cur = qty[code] || 0;
-  const next = Math.max(0, cur + delta);
-  if (next === 0) delete qty[code]; else qty[code] = next;
-
-  const el = document.getElementById('q' + code);
-  if (el) {
-    el.textContent = next;
-    el.className = 'qnum' + (next === 0 ? ' z' : '');
-    const ctrl = el.parentElement;
-    ctrl.querySelector('.minus').className = 'qbtn minus' + (next > 0 ? ' on' : '');
-    ctrl.querySelector('.plus').className  = 'qbtn plus'  + (next > 0 ? ' on' : '');
-    const card = ctrl.closest('.pcard');
-    if (card) card.classList.toggle('has-qty', next > 0);
-  }
-
-  updateFooter();
+function keyPreset(n) { keypadBuf = String(Math.min(MAX_QTY, (parseInt(keypadBuf) || 0) + n)); document.getElementById('kp-val').textContent = keypadBuf; }
+function keyConfirm() {
+  const code = keypad.code;
+  setQty(code, parseInt(keypadBuf) || 0);
+  closeKeypad();
+  refreshCard(code); updateBars();
   if (activeView === 'cart') renderCart();
-  if (delta > 0 && next > 0) toast(findSku(code).name + ' × ' + next);
+}
+function keypadBackdrop(e) { if (e.target === e.currentTarget) closeKeypad(); }
+function renderKeypad() {
+  const el = document.getElementById('keypad');
+  if (!keypad) { el.classList.add('hidden'); return; }
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','back'];
+  const grid = keys.map(k => k === ''
+    ? '<button class="kp-key blank"></button>'
+    : (k === 'back'
+        ? '<button class="kp-key back" onclick="keyTap(\'back\')">⌫</button>'
+        : '<button class="kp-key" onclick="keyTap(\'' + k + '\')">' + k + '</button>')).join('');
+  const presets = [5, 10, 12].map(n => '<button class="kp-preset" onclick="keyPreset(' + n + ')">+' + n + '</button>').join('');
+  el.className = 'sheet-backdrop';
+  el.innerHTML =
+    '<div class="sheet" onclick="event.stopPropagation()">' +
+      '<div class="sheet-handle"></div>' +
+      '<div class="keypad-name">' + esc(findSku(keypad.code).name) + '</div>' +
+      '<div class="keypad-val" id="kp-val">' + (keypadBuf || '0') + '</div>' +
+      '<div class="keypad-presets">' + presets + '</div>' +
+      '<div class="keypad-grid">' + grid + '</div>' +
+      '<button class="keypad-confirm" onclick="keyConfirm()">אישור</button>' +
+    '</div>';
+  el.setAttribute('onclick', 'keypadBackdrop(event)');
 }
 
-function adoptSuggestedQuantities() {
-  catalog.favorites.forEach(fav => { qty[fav.sku_code] = fav.suggested_qty; });
-  updateFooter();
-  renderContent();
-  toast('אומצו הכמויות המוצעות');
-}
-
-function switchView(view) {
-  activeView = view;
-  document.getElementById('catalog-view').classList.toggle('hidden', view !== 'catalog');
-  document.getElementById('cart-view').classList.toggle('hidden', view !== 'cart');
-  document.getElementById('sticky-footer').classList.toggle('hidden', view !== 'catalog');
-  document.getElementById('cart-bottom').classList.toggle('hidden', view !== 'cart');
-
-  const box = document.getElementById('unmatched-box');
-  if (unmatchedItems.length === 0) {
-    box.classList.add('hidden');
-  } else {
-    box.classList.toggle('hidden', view !== 'catalog');
-  }
-
-  if (view === 'cart') { renderCart(); applyEditDeadlineState(); }
-  if (view === 'catalog') renderContent();
-  window.scrollTo(0, 0);
-}
-
+// ══════════════════ CART ══════════════════
 function renderCart() {
   const list = document.getElementById('cart-items');
-  list.innerHTML = '';
-
-  const items = Object.entries(qty).filter(([_, q]) => q > 0);
-  const summary = document.getElementById('cart-summary');
+  const bottom = document.getElementById('cart-bottom');
+  const sum = document.getElementById('cart-sum');
+  const items = lines();
 
   if (items.length === 0) {
-    list.innerHTML = '<div class="empty-cart"><div class="empty-cart-icon"><svg viewBox="0 0 24 24"><path d="M3 6h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 6z" stroke-linejoin="round"></path><path d="M8 6V4a4 4 0 0 1 8 0v2"></path></svg></div><div class="empty-cart-text">העגלה ריקה</div><div class="empty-cart-sub">חזור לקטלוג כדי להוסיף מוצרים</div></div>';
-    document.getElementById('cart-send-btn').disabled = true;
-    summary.textContent = '';
+    const canCancel = isEditOrder() && !isEditExpired();
+    const sub = canCancel ? 'הסרת את כל הפריטים — שליחה תבטל את ההזמנה' : 'חזרו לקטלוג כדי להוסיף מוצרים';
+    list.innerHTML =
+      '<div class="cart-empty"><div class="cart-empty-ico"><svg viewBox="0 0 24 24"><path d="M3 6h18l-2 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L3 6z" stroke-linejoin="round"></path><path d="M8 6V4a4 4 0 0 1 8 0v2"></path></svg></div>' +
+      '<div class="cart-empty-title">העגלה ריקה</div><div class="cart-empty-sub">' + sub + '</div>' +
+      '<button class="cart-empty-btn" onclick="goCatalog()">עבור לקטלוג</button></div>';
+    sum.textContent = '';
+    setCartBottom(canCancel ? 'cancel' : 'disabled');
     return;
   }
 
-  document.getElementById('cart-send-btn').disabled = isEditExpired();
-  const units = items.reduce((a, [_, q]) => a + q, 0);
-  summary.textContent = items.length + ' פריטים · ' + units + ' יחידות';
+  const u = items.reduce((a, [, q]) => a + q, 0);
+  sum.textContent = items.length + ' פריטים · ' + u + ' יחידות';
 
-  const grouped = {};
+  const byMkt = {};
   items.forEach(([code, q]) => {
     const info = findSku(code);
-    const mt = catalog.marketTypes.find(m => m.id === info.market_type_id);
-    const key = mt?.name || 'אחר';
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push({ code, qty: q, name: info.name });
+    (byMkt[info.market_type_id] = byMkt[info.market_type_id] || []).push({ code, q, name: info.name });
   });
 
-  Object.entries(grouped).forEach(([mtName, groupItems]) => {
-    const section = document.createElement('div');
-    section.className = 'cart-section';
+  let html = Object.entries(byMkt).map(([mkt, rows]) =>
+    '<div class="cart-group"><div class="cart-group-title">' + esc(marketName(mkt)) + ' · ' + rows.length + '</div>' +
+    rows.map(r =>
+      '<div class="crow"><div class="crow-info"><div class="crow-name">' + esc(r.name) + '</div>' +
+        '<div class="crow-sku">' + esc(displayCode(r.code)) + '</div></div>' +
+        '<div class="crow-ctrls">' +
+          '<button class="qbtn minus" onclick="dec(\'' + js(r.code) + '\')" aria-label="הפחת">−</button>' +
+          '<button class="qnum" onclick="openKeypad(\'' + js(r.code) + '\')">' + r.q + '</button>' +
+          '<button class="qbtn plus" onclick="inc(\'' + js(r.code) + '\')" aria-label="הוסף">+</button>' +
+          '<button class="rm-btn" onclick="removeFromCart(\'' + js(r.code) + '\')" aria-label="הסר"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke-linejoin="round" stroke-linecap="round"></path></svg></button>' +
+        '</div></div>').join('') +
+    '</div>').join('');
 
-    const title = document.createElement('div');
-    title.className = 'cart-section-title';
-    title.textContent = mtName + ' · ' + groupItems.length;
-    section.appendChild(title);
-
-    groupItems.forEach(({ code, qty: q, name }) => {
-      const safeCode = code.replace(/'/g, "\\'");
-      const row = document.createElement('div');
-      row.className = 'cart-row';
-      row.innerHTML =
-        '<div class="cart-row-info">' +
-          '<div class="cart-row-name">' + escapeHtml(name) + '</div>' +
-          '<div class="cart-row-code">' + escapeHtml(code) + '</div>' +
-        '</div>' +
-        '<div class="cart-row-controls">' +
-          '<button class="qbtn minus on" onclick="chg(\'' + safeCode + '\',-1)">−</button>' +
-          '<span class="qnum">' + q + '</span>' +
-          '<button class="qbtn plus on" onclick="chg(\'' + safeCode + '\',1)">+</button>' +
-          '<button class="remove-btn" onclick="removeFromCart(\'' + safeCode + '\')" aria-label="הסר">×</button>' +
-        '</div>';
-      section.appendChild(row);
-    });
-
-    list.appendChild(section);
-  });
-
-  // While editing/changing an order, offer the customer's usual extras (favourites with a
-  // suggested quantity, not already in the cart) right here in the cart, grouped by market type.
-  if (catalog.existingOrder !== null) renderCartSuggestions(list);
+  html += cartSuggestionsHtml();
+  list.innerHTML = html;
+  setCartBottom(isEditExpired() ? 'disabled' : 'send');
 }
 
-// "You may want to order these too" — the contact's favourites (suggested qty > 0) that aren't
-// already in the cart, grouped by market type, each one-tap addable at its suggested quantity.
-function renderCartSuggestions(container) {
-  const inCart = new Set(Object.keys(qty).filter(c => qty[c] > 0));
+// "אולי תרצה להוסיף גם" — favourites (suggested qty > 0) not already in the cart. Edit flow only,
+// matching the chat: on a brand-new order the hero already covers adoption.
+function cartSuggestionsHtml() {
+  if (catalog.existingOrder === null) return '';
+  const inCart = new Set(lines().map(([c]) => c));
   const sugg = (catalog.favorites || []).filter(f => f.suggested_qty > 0 && !inCart.has(f.sku_code));
-  if (!sugg.length) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'cart-suggest';
-  wrap.innerHTML = '<div class="cart-suggest-head">אולי תרצה להזמין גם את המוצרים האלה</div>';
-
-  const grouped = {};
-  sugg.forEach(f => {
-    const mt = catalog.marketTypes.find(m => String(m.id) === String(f.market_type_id));
-    const key = mt?.name || 'אחר';
-    (grouped[key] = grouped[key] || []).push(f);
-  });
-
-  Object.entries(grouped).forEach(([mtName, favs]) => {
-    const gt = document.createElement('div');
-    gt.className = 'cart-suggest-group-title';
-    gt.textContent = mtName;
-    wrap.appendChild(gt);
-
-    favs.forEach(f => {
-      const safeCode = f.sku_code.replace(/'/g, "\\'");
-      const row = document.createElement('div');
-      row.className = 'suggest-row';
-      row.innerHTML =
-        '<div class="suggest-info">' +
-          '<div class="suggest-name">' + escapeHtml(f.name) + '</div>' +
-          '<div class="suggest-meta">מוצע ' + f.suggested_qty + '</div>' +
-        '</div>' +
-        '<button class="suggest-add" onclick="addSuggested(\'' + safeCode + '\',' + f.suggested_qty + ')">+ הוסף</button>';
-      wrap.appendChild(row);
-    });
-  });
-
-  container.appendChild(wrap);
+  if (!sugg.length) return '';
+  return '<div class="suggest"><div class="suggest-head">אולי תרצה להוסיף גם</div>' +
+    sugg.map(f =>
+      '<div class="suggest-row"><div class="suggest-info"><div class="suggest-name">' + esc(f.name) + '</div>' +
+      '<div class="suggest-meta">מוצע ' + f.suggested_qty + '</div></div>' +
+      '<button class="suggest-add" onclick="addSuggested(\'' + js(f.sku_code) + '\',' + f.suggested_qty + ')">+ הוסף</button></div>').join('') +
+    '</div>';
 }
 
-// Add a suggested favourite at its suggested quantity, then re-render the cart (it moves into the
-// order and out of the suggestions list).
-function addSuggested(code, q) {
-  qty[code] = q;
-  updateFooter();
-  renderCart();
-  toast(findSku(code).name + ' × ' + q);
+// mode: 'send' | 'cancel' (empty edit → cancel the order) | 'disabled'
+function setCartBottom(mode) {
+  const el = document.getElementById('cart-bottom');
+  let btn, clear = '';
+  if (mode === 'cancel') {
+    btn = '<button class="send-btn danger" onclick="sendOrder()"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke-linejoin="round" stroke-linecap="round"></path></svg>בטל הזמנה</button>';
+  } else if (mode === 'disabled') {
+    btn = '<button class="send-btn" disabled>' + (isEditExpired() ? 'חלון העריכה נסגר' : 'העגלה ריקה') + '</button>';
+  } else {
+    btn = '<button class="send-btn" onclick="sendOrder()"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linejoin="round" stroke-linecap="round"></path></svg>שלח הזמנה</button>';
+    clear = '<button class="clear-btn" onclick="clearCart()">אפס את הסל</button>';
+  }
+  el.innerHTML = btn + clear;
 }
+function clearCart() { qty = {}; renderCart(); updateBars(); }
 
-function isEditExpired() {
-  return editUntilEpoch != null && (Date.now() / 1000) > editUntilEpoch;
-}
-
-// Show/refresh the edit-deadline banner in the cart; once the deadline lapses, flip it to the closed
-// state and disable sending. The server re-checks isOrderEditable on submit regardless — this is the
-// friendly heads-up so the customer isn't rejected only after typing.
+// ── edit deadline banner (edit links only) ──
 function applyEditDeadlineState() {
-  const banner = document.getElementById('edit-deadline');
+  const banner = document.getElementById('cart-deadline');
   if (!banner) return;
   if (!editUntilEpoch) { banner.classList.add('hidden'); return; }
   const expired = isEditExpired();
   banner.classList.remove('hidden');
   banner.classList.toggle('expired', expired);
-  banner.textContent = expired
-    ? 'חלון העריכה נסגר — כבר לא ניתן לשנות את ההזמנה'
-    : (catalog.editUntilLabel || '');
-  if (expired) {
-    const sendBtn = document.getElementById('cart-send-btn');
-    if (sendBtn) sendBtn.disabled = true;
+  banner.textContent = expired ? 'חלון העריכה נסגר — כבר לא ניתן לשנות את ההזמנה' : (catalog.editUntilLabel || '');
+  if (expired && activeView === 'cart') renderCart();  // flips send→disabled
+}
+
+// ══════════════════ CLARIFICATIONS ══════════════════
+function openClarify(kind, idx) { clarify = { kind, idx }; variantSel = {}; renderClarify(); }
+function closeClarify() { clarify = null; variantSel = {}; document.getElementById('clarify').classList.add('hidden'); }
+function clarifyBackdrop(e) { if (e.target === e.currentTarget) closeClarify(); }
+
+function pickUnmatched(code) {
+  const it = unmatchedItems[clarify.idx];
+  setQty(code, (qty[code] || 0) + 1);
+  if (it && it.text) resolvedAliases.push({ raw_text: it.text, sku_code: code, fat_pct: (it.fat_pct != null ? it.fat_pct : null) });
+  unmatchedItems.splice(clarify.idx, 1);
+  closeClarify();
+  renderCatalog();
+  toast(findSku(code).name + ' נוסף לסל');
+}
+function dropUnmatched() {
+  const it = unmatchedItems[clarify.idx];
+  if (it && it.text) droppedUnmatched.push(it.text);
+  unmatchedItems.splice(clarify.idx, 1);
+  closeClarify();
+  renderCatalog();
+  toast('הפריט הוסר מההזמנה');
+}
+function toggleVariant(code) { if (variantSel[code]) delete variantSel[code]; else variantSel[code] = true; renderClarify(); }
+function confirmVariants() {
+  const it = allVariantsItems[clarify.idx];
+  const sel = Object.keys(variantSel);
+  if (!sel.length) { toast('לא נבחרו סוגים'); return; }
+  const q = Number(it.quantity) || 1;
+  sel.forEach(code => { setQty(code, (qty[code] || 0) + q); });
+  allVariantsItems.splice(clarify.idx, 1);
+  closeClarify();
+  renderCatalog();
+  toast(sel.length + ' מוצרים נוספו לסל');
+}
+
+function renderClarify() {
+  const el = document.getElementById('clarify');
+  if (!clarify) { el.classList.add('hidden'); return; }
+  let title = '', sub = '', body = '', drop = '';
+
+  if (clarify.kind === 'unmatched') {
+    const it = unmatchedItems[clarify.idx];
+    if (!it) { closeClarify(); return; }
+    title = 'מה התכוונת ב"' + esc(it.text) + '"?';
+    sub = (it.suggestions && it.suggestions.length) ? 'בחר את המוצר המתאים מהקטלוג' : 'לא מצאנו התאמה בקטלוג';
+    body = (it.suggestions || []).map(s =>
+      '<button class="opt" onclick="pickUnmatched(\'' + js(s.sku_code) + '\')">' +
+        '<div class="opt-mark">←</div>' +
+        '<div class="opt-info"><div class="opt-name">' + esc(s.name) + '</div>' +
+        '<div class="opt-meta">' + esc(s.barcode || s.sku_code) + ' · ' + esc(marketName(s.market_type_id)) + '</div></div></button>').join('')
+      || '<div class="no-opts">לא נמצאו הצעות מתאימות</div>';
+    drop = '<button class="drop-btn danger" onclick="dropUnmatched()"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke-linejoin="round" stroke-linecap="round"></path></svg>המוצר לא ברשימה — הסר מההזמנה</button>';
+  } else {
+    const it = allVariantsItems[clarify.idx];
+    if (!it) { closeClarify(); return; }
+    title = 'בחר סוגים ל"' + esc(it.keyword) + '"';
+    sub = (Number(it.quantity) || 1) + ' יח\' לכל סוג שתבחר';
+    body = (it.variants || []).map(v => {
+      const sel = !!variantSel[v.sku_code];
+      return '<button class="opt' + (sel ? ' sel' : '') + '" onclick="toggleVariant(\'' + js(v.sku_code) + '\')">' +
+        '<div class="opt-check">' + (sel ? '✓' : '') + '</div>' +
+        '<div class="opt-info"><div class="opt-name">' + esc(v.name) + '</div>' +
+        '<div class="opt-meta">' + esc(v.barcode || v.sku_code) + ' · ' + esc(marketName(v.market_type_id)) + '</div></div></button>';
+    }).join('') || '<div class="no-opts">לא נמצאו סוגים מתאימים</div>';
+    if ((it.variants || []).length) body += '<button class="var-confirm" onclick="confirmVariants()">הוסף לסל</button>';
+    drop = '<button class="drop-btn" onclick="closeClarify()">אף אחד מהם — סגור</button>';
   }
+
+  el.className = 'sheet-backdrop';
+  el.innerHTML =
+    '<div class="sheet tall" onclick="event.stopPropagation()">' +
+      '<div class="sheet-handle"></div>' +
+      '<div class="clarify-title">' + title + '</div>' +
+      '<div class="clarify-sub">' + sub + '</div>' + body + drop +
+    '</div>';
+  el.setAttribute('onclick', 'clarifyBackdrop(event)');
 }
 
-function removeFromCart(code) {
-  delete qty[code];
-  renderCart();
-  updateFooter();
-}
-
-function clearCart() {
-  qty = {};
-  renderCart();
-  updateFooter();
-}
-
-// Stable across retries: generated once per submit-intent and REUSED if the customer retries
-// after a slow/failed attempt, so the backend dedupes. Cleared only on success → a later,
-// genuinely-new order gets a fresh id.
-let pendingRequestId = null;
-
+// ══════════════════ SUBMIT ══════════════════
 async function sendOrder() {
-  const entries = Object.entries(qty).filter(([_, q]) => q > 0);
-  if (entries.length === 0) return;
-  if (isEditExpired()) { showError('לא ניתן לערוך את ההזמנה יותר — חלון העריכה נסגר'); return; }
-  const items = entries.map(([sku_code, quantity]) => ({ sku_code, quantity }));
+  const entries = lines();
+  const isCancel = entries.length === 0;
+  // An empty cart is only actionable while editing an order → it cancels the order.
+  if (isCancel && !isEditOrder()) return;
+  if (isEditExpired()) { fatal('לא ניתן לערוך את ההזמנה יותר — חלון העריכה נסגר'); return; }
+  if (isCancel && !confirm('להסיר את כל הפריטים ולבטל את ההזמנה?')) return;
 
-  const btn = document.getElementById('cart-send-btn');
-  if (btn) btn.disabled = true;
-  showPosting('שולח את ההזמנה...');
+  const items = entries.map(([sku_code, quantity]) => ({ sku_code, quantity })); // [] when cancelling
+  const sentItems = entries.length, sentUnits = entries.reduce((a, [, q]) => a + q, 0);
 
-  // Apply the order DIRECTLY via the signed API (cart only). The catalog token (in the URL) carries
-  // org/contact/distributor/edited-session; the backend trusts only that, never the body.
+  showPosting(isCancel ? 'מבטל את ההזמנה...' : 'שולח את ההזמנה...');
   const token = new URLSearchParams(location.search).get('t');
   if (!pendingRequestId) {
     pendingRequestId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random();
   }
 
+  let respStatus = 'ok';
   try {
     const r = await fetch(API + '/web-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ items, clientRequestId: pendingRequestId, aliases: resolvedAliases, droppedUnmatched })
+      body: JSON.stringify({ items, clientRequestId: pendingRequestId, aliases: resolvedAliases, droppedUnmatched }),
     });
-    if (r.status === 401) { hidePosting(); showError('הקישור פג תוקף — בקש קישור חדש'); return; }
+    if (r.status === 401) { hidePosting(); fatal('הקישור פג תוקף — בקש קישור חדש'); return; }
     if (!r.ok) {
       let errCode = ''; try { errCode = (await r.json()).error; } catch (e) {}
       hidePosting();
-      // Edit window closed server-side (cutoff passed) — non-retryable, so show the blocking screen
-      // rather than the "try again" alert.
-      if (errCode === 'edit_window_closed') { showError('לא ניתן לערוך את ההזמנה יותר — חלון העריכה נסגר'); return; }
-      alert('שגיאה בשליחת ההזמנה, נסה שוב'); if (btn) btn.disabled = false; return;
+      if (errCode === 'edit_window_closed') { fatal('לא ניתן לערוך את ההזמנה יותר — חלון העריכה נסגר'); return; }
+      toast('שגיאה בשליחה, נסה שוב');
+      return;
     }
+    try { respStatus = (await r.json()).status || 'ok'; } catch (e) {}
   } catch (e) {
     console.error(e);
     hidePosting();
-    alert('שגיאת רשת, נסה שוב'); if (btn) btn.disabled = false; return;
+    toast('שגיאת רשת, נסה שוב');
+    return;
   }
 
-  // Success: the order is applied AND the bot has pushed the WhatsApp confirmation. Clear the id so
-  // a later order is distinct, then NAVIGATE (not window.open — that is popup-blocked after an await)
-  // to the bot chat so the customer lands on the pushed confirmation.
   pendingRequestId = null;
-  let respStatus = 'ok';
-  try { respStatus = (await r.json()).status || 'ok'; } catch (e) {}
-  showPosting(respStatus === 'unchanged' ? 'לא בוצעו שינויים — פותח וואטסאפ...' : 'ההזמנה נשלחה ✓ פותח וואטסאפ...');
+  hidePosting();
+  submitted = { status: respStatus, items: sentItems, units: sentUnits, cancel: isCancel };
+  show('success');
+}
+
+function renderSuccess() {
+  const el = document.getElementById('success-view');
+  const s = submitted || { status: 'ok', items: 0, units: 0, cancel: false };
+  const cancelled = s.cancel || s.status === 'cancelled';
+  const unchanged = s.status === 'unchanged';
+
+  let icon, title, summary;
+  if (cancelled) {
+    icon = 'neutral';
+    title = 'ההזמנה בוטלה';
+    summary = 'הסרת את כל הפריטים. אפשר לשלוח הזמנה חדשה בכל עת.';
+  } else if (unchanged) {
+    icon = 'neutral';
+    title = 'לא בוצעו שינויים';
+    summary = 'ההזמנה נשארה כפי שהייתה.';
+  } else {
+    icon = '';
+    title = 'ההזמנה נשלחה!';
+    summary = s.items + ' פריטים · ' + s.units + ' יחידות נשלחו ל' + esc(catalog.org.name || 'ספק');
+  }
+
+  const check = '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+  const cross = '<svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"></path></svg>';
+  const note = catalog.editUntilLabel
+    ? esc(catalog.editUntilLabel)
+    : 'האישור נשלח אליך בוואטסאפ. אפשר לעדכן את ההזמנה משם.';
+  const waSvg = '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2Zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-1.7-.1-.4-.1-.9-.3-1.6-.6-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8 0-1.3.7-2 .9-2.2.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 1.9c.1.2.1.3 0 .5l-.4.5c-.2.2-.3.4-.1.7.2.3.9 1.4 1.9 2.2 1.3 1.1 2 1.3 2.3 1.1.2-.1.5-.6.7-.8.2-.2.3-.2.6-.1l1.8.9c.3.1.4.2.5.3.1.2.1.7-.1 1.3Z"></path></svg>';
+
+  el.innerHTML =
+    '<div class="success">' +
+      '<div class="success-ico ' + icon + '">' + (cancelled ? cross : check) + '</div>' +
+      '<div class="success-title">' + title + '</div>' +
+      '<div class="success-sum">' + summary + '</div>' +
+      '<div class="success-note">' + note + '</div>' +
+      '<button class="wa-btn" onclick="openWa()">' + waSvg + 'פתח וואטסאפ</button>' +
+      (isEditOrder() ? '' : '<button class="new-btn" onclick="newOrder()">הזמנה חדשה</button>') +
+    '</div>';
+}
+
+function openWa() {
   const phone = (catalog.distributorPhone || '').replace(/\D/g, '');
   window.location.href = 'https://wa.me/' + phone;
 }
-
-function showPosting(text) {
-  const t = document.getElementById('posting-text');
-  if (t && text) t.textContent = text;
-  document.getElementById('posting-overlay').classList.remove('hidden');
-}
-function hidePosting() {
-  document.getElementById('posting-overlay').classList.add('hidden');
-}
-
-function renderUnmatched() {
-  const box = document.getElementById('unmatched-box');
-  if (!unmatchedItems || unmatchedItems.length === 0) {
-    box.classList.add('hidden');
-    return;
-  }
-
-  box.classList.remove('hidden');
-  box.innerHTML =
-    '<div class="unmatched-header">' +
-      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01" stroke-linecap="round"></path></svg>' +
-      'פריטים שלא זוהו · ' + unmatchedItems.length +
-    '</div>';
-
-  unmatchedItems.forEach(function(item, idx) {
-    const row = document.createElement('div');
-    row.className = 'unmatched-row';
-
-    const text = document.createElement('span');
-    text.className = 'unmatched-text';
-    text.textContent = item.text;
-    row.appendChild(text);
-
-    const btn = document.createElement('button');
-    btn.className = 'unmatched-find-btn';
-    btn.textContent = 'מצא בקטלוג';
-    btn.onclick = function() { openUnmatchedModal(idx); };
-    row.appendChild(btn);
-
-    box.appendChild(row);
-  });
+function newOrder() {
+  // Fresh cart on the same page load → wipe ALL per-order state, not just the cart. Leftover
+  // clarifications / aliases / dropped items from the just-placed order must not leak into the next.
+  qty = {}; submitted = null; searchQuery = '';
+  resolvedAliases = []; droppedUnmatched = [];
+  unmatchedItems = []; allVariantsItems = [];
+  lastRemoved = null; clarify = null; keypad = null;
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').classList.add('hidden');
+  activeTab = (catalog.favorites && catalog.favorites.length) ? 'favorites' : (catalog.marketTypes[0] || {}).id;
+  activeCat = null;
+  show('catalog');
 }
 
-// Customer says "my item isn't in the list" → drop it from the order. Recorded server-side as
-// unmatched (like the chat "דלג"), so the distributor still sees what was asked for.
-function dropUnmatched(idx) {
-  const item = unmatchedItems[idx];
-  if (!item) return;
-  if (item.text) droppedUnmatched.push(item.text);
-  unmatchedItems.splice(idx, 1);
-  renderUnmatched();
-  renderContent();
-  updateFooter();
-  closeUnmatchedModal();
-  toast('הפריט הוסר מההזמנה');
+// ── toast / overlays ──
+function toast(msg, withUndo) {
+  const el = document.getElementById('toast');
+  el.innerHTML = '<span></span>' + esc(msg) + (withUndo ? '<button class="toast-undo" onclick="undoRemove()">בטל</button>' : '');
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), withUndo ? 4000 : 1800);
 }
-
-function openUnmatchedModal(idx) {
-  const item = unmatchedItems[idx];
-  const modal = document.getElementById('unmatched-modal');
-  document.getElementById('modal-title').textContent = 'הצעות עבור "' + item.text + '"';
-
-  const list = document.getElementById('suggestions-list');
-  list.innerHTML = '';
-
-  if (!item.suggestions || item.suggestions.length === 0) {
-    list.innerHTML = '<div class="no-suggestions">לא נמצאו הצעות מתאימות</div>';
-  } else {
-    item.suggestions.forEach(function(sug) {
-      const row = document.createElement('div');
-      row.className = 'suggestion-row';
-      const initial = (sug.name || '?').trim()[0] || '·';
-      const mkt = marketName(sug.market_type_id);
-      row.innerHTML =
-        '<div class="suggestion-pimg">' + escapeHtml(initial) + '</div>' +
-        '<div class="suggestion-text">' +
-          '<div class="suggestion-name">' + escapeHtml(sug.name) + '</div>' +
-          '<div class="suggestion-meta">' + escapeHtml(sug.sku_code) +
-            (mkt ? ' · ' + escapeHtml(mkt) : '') +
-          '</div>' +
-        '</div>' +
-        '<span class="suggestion-arrow">←</span>';
-      row.onclick = function() { pickSuggestion(idx, sug); };
-      list.appendChild(row);
-    });
-  }
-
-  // Always offer an explicit escape: "my product isn't in the list" → drop it from the order.
-  const skip = document.createElement('div');
-  skip.className = 'modal-skip';
-  skip.textContent = 'המוצר שלי לא ברשימה — הסר מההזמנה';
-  skip.onclick = function() { dropUnmatched(idx); };
-  list.appendChild(skip);
-
-  modal.classList.remove('hidden');
-}
-
-function closeUnmatchedModal() {
-  document.getElementById('unmatched-modal').classList.add('hidden');
-}
-
-function pickSuggestion(unmatchedIdx, sug) {
-  const item = unmatchedItems[unmatchedIdx];
-  const rawText = item?.text;
-  qty[sug.sku_code] = (qty[sug.sku_code] || 0) + 1;
-  // Carry fat% so the learned alias is the fuller "בולגרית 24", matching the chat behavior.
-  if (rawText) resolvedAliases.push({ raw_text: rawText, sku_code: sug.sku_code, fat_pct: item?.fat_pct ?? null });
-  unmatchedItems.splice(unmatchedIdx, 1);
-  renderUnmatched();
-  renderContent();
-  updateFooter();
-  closeUnmatchedModal();
-  toast(sug.name + ' נוסף לסל');
-}
-
-// ── "מכל סוג" checkbox multi-select (parity with the chat WhatsApp Flow) ──
-function renderAllVariants() {
-  const box = document.getElementById('allvariants-box');
-  if (!allVariantsItems || allVariantsItems.length === 0) { box.classList.add('hidden'); return; }
-  box.classList.remove('hidden');
-  box.innerHTML =
-    '<div class="unmatched-header">' +
-      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01" stroke-linecap="round"></path></svg>' +
-      'בחירת סוגים · ' + allVariantsItems.length +
-    '</div>';
-  allVariantsItems.forEach(function(item, idx) {
-    const row = document.createElement('div');
-    row.className = 'unmatched-row';
-    const text = document.createElement('span');
-    text.className = 'unmatched-text';
-    text.textContent = item.keyword + ' — מכל סוג';
-    row.appendChild(text);
-    const btn = document.createElement('button');
-    btn.className = 'unmatched-find-btn';
-    btn.textContent = 'בחר סוגים';
-    btn.onclick = function() { openAllVariantsModal(idx); };
-    row.appendChild(btn);
-    box.appendChild(row);
-  });
-}
-
-function openAllVariantsModal(idx) {
-  const item = allVariantsItems[idx];
-  const modal = document.getElementById('unmatched-modal');
-  document.getElementById('modal-title').textContent =
-    'בחר סוגים עבור "' + item.keyword + '" · ' + (item.quantity || 1) + ' יח\' לכל בחירה';
-  const list = document.getElementById('suggestions-list');
-  list.innerHTML = '';
-  if (!item.variants || item.variants.length === 0) {
-    list.innerHTML = '<div class="no-suggestions">לא נמצאו סוגים מתאימים</div>';
-    modal.classList.remove('hidden');
-    return;
-  }
-  item.variants.forEach(function(v) {
-    const row = document.createElement('label');
-    row.className = 'suggestion-row';
-    row.style.cursor = 'pointer';
-    const mkt = marketName(v.market_type_id);
-    row.innerHTML =
-      '<input type="checkbox" class="av-check" data-sku="' + escapeHtml(v.sku_code) + '" ' +
-        'style="width:20px;height:20px;flex:none;accent-color:#2563eb">' +
-      '<div class="suggestion-text">' +
-        '<div class="suggestion-name">' + escapeHtml(v.name) + '</div>' +
-        '<div class="suggestion-meta">' + escapeHtml(v.sku_code) + (mkt ? ' · ' + escapeHtml(mkt) : '') + '</div>' +
-      '</div>';
-    list.appendChild(row);
-  });
-  const confirm = document.createElement('button');
-  confirm.className = 'unmatched-find-btn';
-  confirm.style.cssText = 'width:100%;margin-top:14px;padding:14px;font-size:15px';
-  confirm.textContent = 'הוסף לסל';
-  confirm.onclick = function() { confirmAllVariants(idx); };
-  list.appendChild(confirm);
-  modal.classList.remove('hidden');
-}
-
-function confirmAllVariants(idx) {
-  const item = allVariantsItems[idx];
-  const checks = document.querySelectorAll('#suggestions-list .av-check:checked');
-  if (checks.length === 0) { toast('לא נבחרו סוגים'); return; }
-  const q = Number(item.quantity) || 1;
-  checks.forEach(function(c) {
-    const sku = c.getAttribute('data-sku');
-    qty[sku] = (qty[sku] || 0) + q;   // N units per selected product, like the chat Flow
-  });
-  const n = checks.length;
-  allVariantsItems.splice(idx, 1);
-  renderAllVariants();
-  renderContent();
-  updateFooter();
-  closeUnmatchedModal();
-  toast(n + ' מוצרים נוספו לסל');
-}
-
-function updateFooter() {
-  const n = Object.keys(qty).length;
-  const units = Object.values(qty).reduce((a, b) => a + b, 0);
-
-  const badge = document.getElementById('badge');
-  document.getElementById('badge-count').textContent = n; // number of distinct items in the cart
-  badge.classList.toggle('on', n > 0);
-
-  const btn = document.getElementById('footer-btn');
-  btn.disabled = n === 0;
-  if (n === 0) {
-    btn.textContent = 'בחר מוצרים להזמנה';
-  } else {
-    btn.innerHTML =
-      '<span class="footer-btn-left">' +
-        '<span class="footer-btn-count">' + n + '</span>' +
-        'עבור לעגלה · ' + units + ' יחידות' +
-      '</span>' +
-      '<span class="footer-btn-arrow">←</span>';
-  }
-}
-
-function showLoading() {
-  document.getElementById('plist').innerHTML =
-    '<div class="loading"><div class="spinner"></div>טוען קטלוג...</div>';
-}
-function showError(msg) {
-  document.getElementById('org-name').textContent = 'שגיאה';
-  document.getElementById('plist').innerHTML =
-    '<div class="err"><div class="ei">⚠</div>' + msg + '</div>';
-}
-let toastT;
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('on');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('on'), 1800);
+function clearToast() { clearTimeout(toastTimer); document.getElementById('toast').classList.remove('on'); }
+function showPosting(text) { const t = document.getElementById('posting-text'); if (t && text) t.textContent = text; document.getElementById('posting').classList.remove('hidden'); }
+function hidePosting() { document.getElementById('posting').classList.add('hidden'); }
+// Fatal / blocking screen — replaces the whole app (bad token, load error, closed window).
+function fatal(msg) {
+  document.getElementById('boot').classList.add('hidden');
+  const app = document.getElementById('app');
+  app.classList.remove('hidden');
+  app.innerHTML = '<div class="errbox"><div class="ei">⚠</div><div class="errbox-text">' + esc(msg) + '</div></div>';
 }
 
 init();
