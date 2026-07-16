@@ -76,13 +76,12 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .pill.on{background:var(--green);color:#fff;border-color:var(--green)}
 
 /* hero */
-.hero{margin:10px 14px 4px;background:linear-gradient(155deg,var(--green),var(--green-deep));border-radius:18px;padding:16px 16px 15px;color:#fff;box-shadow:0 10px 30px rgba(12,59,43,.22)}
-.hero-kick{font-size:12px;font-weight:700;letter-spacing:.06em;color:#8fe6b5}
-.hero-line{font-size:17px;font-weight:800;margin-top:4px;letter-spacing:-.01em;text-wrap:pretty}
-.hero-btns{display:flex;gap:9px;margin-top:13px}
-.hero-go{flex:1;background:var(--wa);color:var(--wa-ink);font-weight:800;font-size:14.5px;padding:13px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(37,211,102,.3)}
-.hero-go svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4}
-.hero-stay{flex:none;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:14px;padding:13px 15px;border-radius:12px;border:1px solid rgba(255,255,255,.18)}
+.hero{margin:12px 14px 6px;background:var(--wa-soft);border:1px solid var(--wa-line);border-radius:16px;padding:14px 16px}
+.hero-kick{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--wa-deep)}
+.hero-line{font-size:15px;font-weight:700;margin-top:3px;color:var(--ink);letter-spacing:-.01em;text-wrap:pretty}
+.hero-btn{width:100%;margin-top:12px;background:#fff;color:var(--wa-deep);border:1.5px solid var(--wa-line);border-radius:12px;padding:12px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px}
+.hero-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.4}
+.hero-btn:active{background:var(--wa-soft)}
 
 /* product groups + cards */
 #plist{padding-bottom:150px}
@@ -111,7 +110,7 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .empty-list-text{font-weight:600;color:var(--ink-2)}
 
 /* sticky bottom bar (catalog) */
-.catalog-bar{position:absolute;bottom:0;left:0;right:0;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--app) 70%,rgba(245,248,246,0));z-index:120}
+.catalog-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;padding:12px 14px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--app) 78%,rgba(245,248,246,0));z-index:120}
 .bar-btn{width:100%;padding:15px 18px;border-radius:14px;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:space-between;background:#e3ede8;color:#7d968b}
 .bar-btn.on{background:var(--green-mid);color:#fff;box-shadow:0 8px 20px rgba(12,59,43,.28)}
 .bar-btn-left{display:flex;align-items:center;gap:10px}
@@ -154,7 +153,7 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .suggest-name{font-size:13.5px;font-weight:600}
 .suggest-meta{font-size:11px;color:var(--amber-ink);font-weight:700;margin-top:2px}
 .suggest-add{flex:none;background:#fff;color:var(--amber-ink);border:1.5px solid var(--amber-line-2);border-radius:999px;font-size:13px;font-weight:800;padding:8px 15px}
-.cart-bottom{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 14px calc(16px + env(safe-area-inset-bottom));z-index:120;box-shadow:0 -6px 22px rgba(12,59,43,.07)}
+.cart-bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;background:var(--surface);border-top:1px solid var(--line);padding:12px 14px calc(16px + env(safe-area-inset-bottom));z-index:120;box-shadow:0 -6px 22px rgba(12,59,43,.07)}
 .send-btn{width:100%;padding:16px;border-radius:14px;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--wa);color:var(--wa-ink);box-shadow:0 6px 18px rgba(37,211,102,.32)}
 .send-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9}
 .send-btn:disabled{background:#eef3f0;color:var(--ink-4);box-shadow:none}
@@ -485,16 +484,12 @@ function renderHero() {
   if (searchQuery || activeTab !== 'favorites' || catalog.existingOrder !== null || !(catalog.favorites || []).length) {
     el.classList.add('hidden'); el.innerHTML = ''; return;
   }
-  const favUnits = catalog.favorites.reduce((a, f) => a + (f.suggested_qty || 0), 0);
   el.classList.remove('hidden');
   el.className = 'hero';
   el.innerHTML =
     '<div class="hero-kick">ההזמנה הקבועה שלי</div>' +
-    '<div class="hero-line">' + catalog.favorites.length + ' מוצרים קבועים · ' + favUnits + ' יחידות לפי ההרגל שלך</div>' +
-    '<div class="hero-btns">' +
-      '<button class="hero-go" onclick="adopt(true)"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>אמץ והמשך לעגלה</button>' +
-      '<button class="hero-stay" onclick="adopt(false)">אמץ כאן</button>' +
-    '</div>';
+    '<div class="hero-line">' + catalog.favorites.length + ' מוצרים קבועים לפי ההרגל שלך</div>' +
+    '<button class="hero-btn" onclick="adopt()"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>אמץ כמויות מוצעות</button>';
 }
 
 function renderPlist() {
@@ -574,14 +569,14 @@ function refreshCard(code) {
 }
 
 function updateBars() {
-  const n = lines().length, u = units();
+  const n = lines().length;   // distinct items — the only count we surface on the bar
   const badge = document.getElementById('badge');
   document.getElementById('badge-count').textContent = n;
   badge.classList.toggle('on', n > 0 || isEditOrder());
   const bar = document.getElementById('bar-btn');
   if (n > 0) {
     bar.className = 'bar-btn on';
-    bar.innerHTML = '<span class="bar-btn-left"><span class="bar-btn-count">' + n + '</span>המשך לעגלה · ' + u + ' יחידות</span><span style="font-size:19px">←</span>';
+    bar.innerHTML = '<span class="bar-btn-left"><span class="bar-btn-count">' + n + '</span>המשך לעגלה</span><span style="font-size:19px">←</span>';
   } else if (isEditOrder()) {
     bar.className = 'bar-btn on';
     bar.innerHTML = '<span class="bar-btn-left">המשך לעגלה</span><span style="font-size:19px">←</span>';
@@ -623,11 +618,12 @@ function undoRemove() {
 }
 function addSuggested(code, q) { setQty(code, q); refreshCard(code); updateBars(); renderCart(); toast(findSku(code).name + ' × ' + q); }
 
-// ── fastest path: adopt suggested quantities ──
-function adopt(go) {
-  (catalog.favorites || []).forEach(f => { qty[f.sku_code] = f.suggested_qty; });
-  toast(go ? 'אומצו הכמויות המוצעות' : 'אומצו הכמויות — הישאר לעריכה');
-  if (go) show('cart'); else { renderPlist(); updateBars(); }
+// ── fastest path: adopt the suggested quantities (stay on the page; no jump to cart) ──
+function adopt() {
+  (catalog.favorites || []).forEach(f => { setQty(f.sku_code, f.suggested_qty); });
+  renderPlist();
+  updateBars();
+  toast('אומצו הכמויות המוצעות');
 }
 
 // ── search ──
