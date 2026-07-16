@@ -204,6 +204,17 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .drop-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9}
 .no-opts{text-align:center;padding:24px;color:var(--ink-3);font-size:13px}
 
+/* confirmation dialog (replaces the native confirm()) */
+.confirm-backdrop{position:fixed;inset:0;background:rgba(13,31,24,.5);display:flex;align-items:center;justify-content:center;z-index:1300;animation:om-fade .2s ease;padding:24px}
+.confirm-card{background:var(--surface);border-radius:20px;max-width:360px;width:100%;padding:24px 22px 18px;text-align:center;box-shadow:0 20px 50px rgba(13,31,24,.3);animation:om-pop .3s cubic-bezier(.2,.9,.3,1.4) both}
+.confirm-ico{width:56px;height:56px;border-radius:50%;background:var(--danger-bg);display:grid;place-items:center;margin:0 auto 14px}
+.confirm-ico svg{width:26px;height:26px;stroke:var(--danger);fill:none;stroke-width:1.9}
+.confirm-title{font-size:18px;font-weight:800;margin-bottom:6px;letter-spacing:-.01em}
+.confirm-msg{font-size:14px;color:var(--ink-2);line-height:1.5;text-wrap:pretty}
+.confirm-btns{display:flex;flex-direction:column;gap:9px;margin-top:20px}
+.confirm-yes{width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:800;background:var(--danger);color:#fff}
+.confirm-no{width:100%;padding:13px;border-radius:12px;font-size:15px;font-weight:700;background:var(--app);color:var(--ink-2)}
+
 /* toast */
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;white-space:nowrap;z-index:2000;box-shadow:0 8px 24px rgba(13,31,24,.3);transition:all .25s cubic-bezier(.2,.8,.2,1);opacity:0;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
@@ -275,6 +286,7 @@ input[type=search]::-webkit-search-cancel-button{display:none}
   <!-- sheets + toast live outside the views so they overlay everything -->
   <div id="keypad" class="hidden"></div>
   <div id="clarify" class="hidden"></div>
+  <div id="confirm" class="hidden"></div>
   <div id="posting" class="posting hidden"><div class="spinner"></div><span id="posting-text">שולח את ההזמנה...</span></div>
   <div id="toast" class="toast"><span></span></div>
 </div>
@@ -316,6 +328,7 @@ let clarify = null;           // { kind:'unmatched'|'variants', idx }
 let variantSel = {};          // sku_code -> true (checkbox multi-select)
 let lastRemoved = null;       // { code, qty } for the undo toast
 let pendingRequestId = null;  // reused across retries so the backend dedupes
+let confirmResolve = null;    // pending resolve() for the custom confirm dialog
 let toastTimer = null, deadlineTimer = null;
 
 // ── boot ──
@@ -392,7 +405,11 @@ function marketName(id) {
   const m = catalog.marketTypes.find(m => String(m.id) === String(id));
   return m ? m.name : 'אחר';
 }
-function isEditOrder() { return !!(catalog && catalog.sessionId); }
+// True when the page opened an EXISTING order to edit — confirmed (token has a sessionId) OR
+// in-progress/unconfirmed (prefilled from the pending order → existingOrder populated). Only then can
+// an empty cart mean "cancel this order". existingOrder is non-null only for a sessionId or a
+// prefill-pending token, so this stays in lock-step with the backend cancel paths.
+function isEditOrder() { return !!(catalog && (catalog.sessionId || catalog.existingOrder)); }
 function isEditExpired() { return editUntilEpoch != null && (Date.now() / 1000) > editUntilEpoch; }
 function units() { return Object.values(qty).reduce((a, b) => a + b, 0); }
 function lines() { return Object.entries(qty).filter(([, q]) => q > 0); }
@@ -846,7 +863,13 @@ async function sendOrder() {
   // An empty cart is only actionable while editing an order → it cancels the order.
   if (isCancel && !isEditOrder()) return;
   if (isEditExpired()) { fatal('לא ניתן לערוך את ההזמנה יותר — חלון העריכה נסגר'); return; }
-  if (isCancel && !confirm('להסיר את כל הפריטים ולבטל את ההזמנה?')) return;
+  // Cancelling wipes the whole order — confirm with a styled in-page dialog (never the native confirm).
+  if (isCancel && !(await askConfirm({
+    title: 'לבטל את ההזמנה?',
+    msg:   'כל הפריטים יוסרו וההזמנה תבוטל.',
+    yes:   'כן, בטל הזמנה',
+    no:    'השאר את ההזמנה',
+  }))) return;
 
   const items = entries.map(([sku_code, quantity]) => ({ sku_code, quantity })); // [] when cancelling
 
@@ -900,6 +923,36 @@ function toast(msg, withUndo) {
   toastTimer = setTimeout(() => el.classList.remove('on'), withUndo ? 4000 : 1800);
 }
 function clearToast() { clearTimeout(toastTimer); document.getElementById('toast').classList.remove('on'); }
+
+// Styled in-page confirmation (replaces the native confirm(), which shows browser chrome + English
+// buttons). Returns a Promise<boolean>. Only one is ever open at a time.
+function askConfirm(opts) {
+  return new Promise(resolve => {
+    confirmResolve = resolve;
+    const el = document.getElementById('confirm');
+    el.className = 'confirm-backdrop';
+    el.innerHTML =
+      '<div class="confirm-card" onclick="event.stopPropagation()">' +
+        '<div class="confirm-ico"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke-linejoin="round" stroke-linecap="round"></path></svg></div>' +
+        '<div class="confirm-title">' + esc(opts.title) + '</div>' +
+        '<div class="confirm-msg">' + esc(opts.msg) + '</div>' +
+        '<div class="confirm-btns">' +
+          '<button class="confirm-yes" onclick="resolveConfirm(true)">' + esc(opts.yes) + '</button>' +
+          '<button class="confirm-no" onclick="resolveConfirm(false)">' + esc(opts.no) + '</button>' +
+        '</div>' +
+      '</div>';
+    el.setAttribute('onclick', 'confirmBackdrop(event)');
+  });
+}
+function resolveConfirm(v) {
+  const el = document.getElementById('confirm');
+  el.classList.add('hidden');
+  el.setAttribute('onclick', '');
+  el.innerHTML = '';
+  const r = confirmResolve; confirmResolve = null;
+  if (r) r(v);
+}
+function confirmBackdrop(e) { if (e.target === e.currentTarget) resolveConfirm(false); }
 function showPosting(text) { const t = document.getElementById('posting-text'); if (t && text) t.textContent = text; document.getElementById('posting').classList.remove('hidden'); }
 function hidePosting() { document.getElementById('posting').classList.add('hidden'); }
 // Fatal / blocking screen — replaces the whole app (bad token, load error, closed window).
