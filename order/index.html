@@ -318,6 +318,7 @@ let activeCat = null;
 let searchQuery = '';
 let unmatchedItems = [];      // open clarification items (server) — spliced as resolved
 let allVariantsItems = [];    // open "מכל סוג" items (server) — spliced as resolved
+let needsQty = new Set();     // sku_codes whose handwritten qty was unreadable from an image — confirm on page
 let resolvedAliases = [];     // raw customer text -> chosen sku (learned as contact aliases)
 let droppedUnmatched = [];    // raw texts the customer marked "not in the list"
 let editUntilEpoch = null;    // edit deadline (unix seconds); null for new orders
@@ -353,7 +354,10 @@ async function init() {
     catalog.favorites.sort((a, b) => (b.suggested_qty || 0) - (a.suggested_qty || 0));
   }
   if (catalog.existingOrder) {
-    catalog.existingOrder.forEach(it => { qty[it.sku_code] = it.quantity; });
+    catalog.existingOrder.forEach(it => {
+      qty[it.sku_code] = it.quantity;
+      if (it.needs_qty) needsQty.add(it.sku_code);   // image vision: SKU known, quantity to confirm
+    });
   }
 
   const hasFavorites = catalog.favorites && catalog.favorites.length > 0;
@@ -503,7 +507,14 @@ function renderPlist() {
       (s.sku_code && s.sku_code.toLowerCase().includes(q)) ||
       (s.barcode && s.barcode.toLowerCase().includes(q)));
     if (!m.length) { el.innerHTML = emptyList('לא נמצאו מוצרים'); return; }
-    groups = [{ title: 'תוצאות חיפוש', meta: m.length + ' מוצרים', items: m.map(s => ({ code: s.sku_code, name: s.name })) }];
+    // Group search results by market type (מדף / מעדניה / …), ordered by the catalog's market order.
+    const order = catalog.marketTypes.map(mt => String(mt.id));
+    const byMkt = {};
+    m.forEach(s => { const k = s.market_type_id != null ? String(s.market_type_id) : '__none__'; (byMkt[k] = byMkt[k] || []).push(s); });
+    groups = Object.keys(byMkt)
+      .sort((a, b) => (order.indexOf(a) < 0 ? 999 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 999 : order.indexOf(b)))
+      .map(k => ({ title: k === '__none__' ? 'אחר' : (marketName(k) || 'אחר'), meta: byMkt[k].length + ' מוצרים',
+        items: byMkt[k].map(s => ({ code: s.sku_code, name: s.name })) }));
   } else if (activeTab === 'favorites') {
     const showTag = catalog.existingOrder === null;   // suggested-qty tags only for new orders
     const byMkt = {};
@@ -603,6 +614,7 @@ function dec(code) { setQty(code, (qty[code] || 0) - 1); applyQtyChange(code); }
 function removeFromCart(code) {
   const prev = qty[code] || 0;
   setQty(code, 0);
+  needsQty.delete(code);   // removing a needs-qty line means "not ordered" — clear its confirm flag
   lastRemoved = { code, qty: prev };
   refreshCard(code); updateBars(); renderCart();
   toast('הוסר מהעגלה', true);
@@ -691,8 +703,9 @@ function renderCart() {
   const bottom = document.getElementById('cart-bottom');
   const sum = document.getElementById('cart-sum');
   const items = lines();
+  const pending = [...needsQty].filter(c => !(qty[c] > 0));   // needs_qty lines still awaiting a quantity
 
-  if (items.length === 0) {
+  if (items.length === 0 && pending.length === 0) {
     const canCancel = isEditOrder() && !isEditExpired();
     const sub = canCancel ? 'הסרת את כל הפריטים — שליחה תבטל את ההזמנה' : 'חזרו לקטלוג כדי להוסיף מוצרים';
     list.innerHTML =
@@ -705,18 +718,24 @@ function renderCart() {
   }
 
   const u = items.reduce((a, [, q]) => a + q, 0);
-  sum.textContent = items.length + ' פריטים · ' + u + ' יחידות';
+  sum.textContent = pending.length
+    ? ('יש לאשר כמות ל־' + pending.length + ' פריטים לפני שליחה')
+    : (items.length + ' פריטים · ' + u + ' יחידות');
 
+  // Confirmed lines (qty>0) + needs_qty lines still at 0 (rendered highlighted), grouped by market.
   const byMkt = {};
-  items.forEach(([code, q]) => {
-    const info = findSku(code);
-    (byMkt[info.market_type_id] = byMkt[info.market_type_id] || []).push({ code, q, name: info.name });
-  });
+  items.map(([code, q]) => ({ code, q, needs: false }))
+    .concat(pending.map(code => ({ code, q: 0, needs: true })))
+    .forEach(({ code, q, needs }) => {
+      const info = findSku(code);
+      (byMkt[info.market_type_id] = byMkt[info.market_type_id] || []).push({ code, q, name: info.name, needs });
+    });
 
   let html = Object.entries(byMkt).map(([mkt, rows]) =>
     '<div class="cart-group"><div class="cart-group-title">' + esc(marketName(mkt)) + ' · ' + rows.length + '</div>' +
     rows.map(r =>
-      '<div class="crow"><div class="crow-info"><div class="crow-name">' + esc(r.name) + '</div>' +
+      '<div class="crow' + (r.needs ? ' needs-qty' : '') + '"' + (r.needs ? ' style="border-inline-start:3px solid var(--amber);background:var(--amber-soft)"' : '') + '><div class="crow-info"><div class="crow-name">' + esc(r.name) +
+        (r.needs ? ' <span style="color:var(--amber-ink);font-size:11.5px;font-weight:700">· אשר כמות</span>' : '') + '</div>' +
         '<div class="crow-sku">' + esc(displayCode(r.code)) + '</div></div>' +
         '<div class="crow-ctrls">' +
           '<button class="qbtn minus" onclick="dec(\'' + js(r.code) + '\')" aria-label="הפחת">−</button>' +
@@ -728,7 +747,7 @@ function renderCart() {
 
   html += cartSuggestionsHtml();
   list.innerHTML = html;
-  setCartBottom(isEditExpired() ? 'disabled' : 'send');
+  setCartBottom(isEditExpired() ? 'disabled' : (pending.length ? 'needsqty' : 'send'));
 }
 
 // "אולי תרצה להוסיף גם" — favourites (suggested qty > 0) not already in the cart. Edit flow only,
@@ -754,13 +773,15 @@ function setCartBottom(mode) {
     btn = '<button class="send-btn danger" onclick="sendOrder()"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke-linejoin="round" stroke-linecap="round"></path></svg>בטל הזמנה</button>';
   } else if (mode === 'disabled') {
     btn = '<button class="send-btn" disabled>' + (isEditExpired() ? 'חלון העריכה נסגר' : 'העגלה ריקה') + '</button>';
+  } else if (mode === 'needsqty') {
+    btn = '<button class="send-btn" disabled>אשרו כמות לפני שליחה</button>';
   } else {
     btn = '<button class="send-btn" onclick="sendOrder()"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linejoin="round" stroke-linecap="round"></path></svg>שלח הזמנה</button>';
     clear = '<button class="clear-btn" onclick="clearCart()">אפס את הסל</button>';
   }
   el.innerHTML = btn + clear;
 }
-function clearCart() { qty = {}; renderCart(); updateBars(); }
+function clearCart() { qty = {}; needsQty.clear(); renderCart(); updateBars(); }
 
 // ── edit deadline banner (edit links only) ──
 function applyEditDeadlineState() {
