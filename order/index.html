@@ -319,6 +319,7 @@ let searchQuery = '';
 let unmatchedItems = [];      // open clarification items (server) — spliced as resolved
 let allVariantsItems = [];    // open "מכל סוג" items (server) — spliced as resolved
 let needsQty = new Set();     // sku_codes whose handwritten qty was unreadable from an image — confirm on page
+let needsQtyTimers = {};      // sku_code -> debounce timer: auto-confirm ~1s after the last qty tap
 let resolvedAliases = [];     // raw customer text -> chosen sku (learned as contact aliases)
 let droppedUnmatched = [];    // raw texts the customer marked "not in the list"
 let editUntilEpoch = null;    // edit deadline (unix seconds); null for new orders
@@ -620,6 +621,15 @@ function setQty(code, val) {
 function applyQtyChange(code, opts) {
   refreshCard(code);
   updateBars();
+  // needs_qty debounce: ~1s after the LAST tap (rapid taps reset it), auto-confirm — drop it from the
+  // needs-qty set so its clarify row clears and it settles into the cart. At qty 0 it stays (still needed).
+  if (needsQty.has(code)) {
+    clearTimeout(needsQtyTimers[code]);
+    if ((qty[code] || 0) > 0) needsQtyTimers[code] = setTimeout(() => {
+      needsQty.delete(code); delete needsQtyTimers[code];
+      if (activeView === 'cart') renderCart(); else renderClarifyBox();
+    }, 1000);
+  }
   if (activeView === 'cart') renderCart();
   else renderClarifyBox();   // catalog view: keep the inline "אשר כמות" clarify rows in sync as qty changes
   if (opts && opts.toast) toast(opts.toast);
@@ -686,8 +696,10 @@ function keyConfirm() {
   const code = keypad.code;
   setQty(code, parseInt(keypadBuf) || 0);
   closeKeypad();
+  // needs_qty via keypad = an explicit confirm → clear it immediately (no debounce wait).
+  if (needsQty.has(code) && (qty[code] || 0) > 0) { clearTimeout(needsQtyTimers[code]); needsQty.delete(code); delete needsQtyTimers[code]; }
   refreshCard(code); updateBars();
-  if (activeView === 'cart') renderCart();
+  if (activeView === 'cart') renderCart(); else renderClarifyBox();
 }
 function keypadBackdrop(e) { if (e.target === e.currentTarget) closeKeypad(); }
 function renderKeypad() {
