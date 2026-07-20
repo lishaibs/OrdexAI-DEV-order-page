@@ -454,14 +454,17 @@ function renderClarifyBox() {
     '<div class="clarify-row"><span class="clarify-row-label">🧀 ' + esc(v.keyword) + ' — מכל סוג</span>' +
     '<button class="clarify-cta" onclick="openClarify(\'variants\',' + i + ')">בחר סוגים</button></div>'));
   // Image vision: SKU known but the handwritten quantity was unreadable — confirm the qty inline here,
-  // right alongside the SKU-selection clarifications (not hidden away in the cart).
-  [...needsQty].filter(c => !(qty[c] > 0)).forEach(code => {
+  // alongside the SKU-selection clarifications. Rows STAY put while editing (they don't vanish the
+  // instant qty>0), so the customer can step up to the exact amount; ✓ marks a set quantity.
+  [...needsQty].forEach(code => {
     const info = findSku(code);
+    const q = qty[code] || 0;
     rows.push(
-      '<div class="clarify-row"><span class="clarify-row-label">✏️ ' + esc(info.name) + ' — אשר כמות</span>' +
+      '<div class="clarify-row"' + (q > 0 ? ' style="opacity:.72"' : '') + '><span class="clarify-row-label">' +
+        (q > 0 ? '✓ ' : '✏️ ') + esc(info.name) + (q > 0 ? '' : ' — אשר כמות') + '</span>' +
       '<div class="stepper" style="flex:none">' +
         '<button class="qbtn minus" onclick="dec(\'' + js(code) + '\')" aria-label="הפחת">−</button>' +
-        '<button class="qnum" onclick="openKeypad(\'' + js(code) + '\')">' + (qty[code] || 0) + '</button>' +
+        '<button class="qnum" onclick="openKeypad(\'' + js(code) + '\')">' + q + '</button>' +
         '<button class="qbtn plus" onclick="inc(\'' + js(code) + '\')" aria-label="הוסף">+</button>' +
       '</div></div>');
   });
