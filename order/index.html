@@ -453,6 +453,18 @@ function renderClarifyBox() {
   allVariantsItems.forEach((v, i) => rows.push(
     '<div class="clarify-row"><span class="clarify-row-label">🧀 ' + esc(v.keyword) + ' — מכל סוג</span>' +
     '<button class="clarify-cta" onclick="openClarify(\'variants\',' + i + ')">בחר סוגים</button></div>'));
+  // Image vision: SKU known but the handwritten quantity was unreadable — confirm the qty inline here,
+  // right alongside the SKU-selection clarifications (not hidden away in the cart).
+  [...needsQty].filter(c => !(qty[c] > 0)).forEach(code => {
+    const info = findSku(code);
+    rows.push(
+      '<div class="clarify-row"><span class="clarify-row-label">✏️ ' + esc(info.name) + ' — אשר כמות</span>' +
+      '<div class="stepper" style="flex:none">' +
+        '<button class="qbtn minus" onclick="dec(\'' + js(code) + '\')" aria-label="הפחת">−</button>' +
+        '<button class="qnum" onclick="openKeypad(\'' + js(code) + '\')">' + (qty[code] || 0) + '</button>' +
+        '<button class="qbtn plus" onclick="inc(\'' + js(code) + '\')" aria-label="הוסף">+</button>' +
+      '</div></div>');
+  });
   if (!rows.length) { box.classList.add('hidden'); box.innerHTML = ''; return; }
   box.classList.remove('hidden');
   box.innerHTML =
@@ -606,6 +618,7 @@ function applyQtyChange(code, opts) {
   refreshCard(code);
   updateBars();
   if (activeView === 'cart') renderCart();
+  else renderClarifyBox();   // catalog view: keep the inline "אשר כמות" clarify rows in sync as qty changes
   if (opts && opts.toast) toast(opts.toast);
 }
 function add(code) { setQty(code, (qty[code] || 0) + 1); applyQtyChange(code, { toast: findSku(code).name + ' נוסף לסל' }); }
