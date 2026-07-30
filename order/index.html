@@ -488,12 +488,20 @@ function renderTabs() {
     esc(t.label) + (t.dot ? '<span class="tab-dot"></span>' : '') + '</button>').join('');
 }
 
+// The category to auto-open for a market: the FIRST category in catalog.categories order
+// (server sorts by sku_categories.sort_order) that has products in this market. Falls back to
+// the SKU-derived order only if no catalog category matches.
+function defaultCatId(catIds) {
+  const first = catalog.categories.find(c => catIds.includes(c.id));
+  return first ? first.id : catIds[0];
+}
+
 function renderCats() {
   const el = document.getElementById('cats');
   const inMkt = catalog.skus.filter(s => s.market_type_id === activeTab);
   const catIds = [...new Set(inMkt.map(s => s.category_id))];
   if (!catIds.length) { el.classList.add('hidden'); el.innerHTML = ''; activeCat = null; return; }
-  if (!activeCat || !catIds.includes(activeCat)) activeCat = catIds[0];
+  if (!activeCat || !catIds.includes(activeCat)) activeCat = defaultCatId(catIds);
   el.classList.remove('hidden');
   el.innerHTML = catalog.categories.filter(c => catIds.includes(c.id)).map(c =>
     '<button class="pill' + (activeCat === c.id ? ' on' : '') + '" onclick="switchCat(\'' + js(c.id) + '\')">' + esc(c.name || c.code) + '</button>').join('');
@@ -542,7 +550,7 @@ function renderPlist() {
   } else {
     const inMkt = catalog.skus.filter(s => s.market_type_id === activeTab);
     const catIds = [...new Set(inMkt.map(s => s.category_id))];
-    if (!activeCat || !catIds.includes(activeCat)) activeCat = catIds[0];
+    if (!activeCat || !catIds.includes(activeCat)) activeCat = defaultCatId(catIds);
     const skus = inMkt.filter(s => s.category_id === activeCat);
     if (!skus.length) { el.innerHTML = emptyList('אין מוצרים בקטגוריה זו'); return; }
     const cat = findCat(activeCat);
