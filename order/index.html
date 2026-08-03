@@ -849,7 +849,15 @@ function setCartBottom(mode) {
   }
   el.innerHTML = btn + clear;
 }
-function clearCart() { qty = {}; needsQty.clear(); renderCart(); updateBars(); }
+async function clearCart() {
+  if (!(await askConfirm({
+    title: 'לאפס את הסל?',
+    msg:   'כל הפריטים יוסרו מהסל.',
+    yes:   'כן, אפס את הסל',
+    no:    'ביטול',
+  }))) return;
+  qty = {}; needsQty.clear(); renderCart(); updateBars();
+}
 
 // ── edit deadline banner (edit links only) ──
 function applyEditDeadlineState() {
