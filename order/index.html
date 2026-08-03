@@ -336,6 +336,33 @@ let pendingRequestId = null;  // reused across retries so the backend dedupes
 let confirmResolve = null;    // pending resolve() for the custom confirm dialog
 let toastTimer = null, deadlineTimer = null;
 
+// ── Overlay ↔ hardware Back integration ──────────────────────────────
+// Each open overlay owns one throwaway history entry. Hardware/OS Back (Android),
+// the iOS swipe-back gesture, and the in-app browser back arrow all fire popstate
+// → we close the top overlay instead of leaving the page. Programmatic closes
+// (backdrop tap / action buttons) hide immediately, then unwind their own history
+// entry with a guard flag so popstate is a no-op for them.
+const overlayStack = [];       // entries: { back: fn }  (back = hardware-Back behavior)
+let overlayUnwinding = false;  // true while WE call history.back() ourselves
+let clarifyEntry = null, keypadEntry = null, confirmEntry = null;
+
+function openOverlay(entry) {
+  overlayStack.push(entry);
+  history.pushState({ omOverlay: overlayStack.length }, '');
+}
+function unwindOverlay(entry) { // remove entry + drop its history slot, no re-close
+  const i = overlayStack.lastIndexOf(entry);
+  if (i === -1) return;         // already gone (e.g. hardware Back handled it)
+  overlayStack.splice(i, 1);
+  overlayUnwinding = true;
+  history.back();
+}
+window.addEventListener('popstate', function () {
+  if (overlayUnwinding) { overlayUnwinding = false; return; } // our own unwind — ignore
+  const entry = overlayStack.pop();                           // hardware/OS Back
+  if (entry) entry.back();
+});
+
 // ── boot ──
 async function init() {
   const token = new URLSearchParams(location.search).get('t');
@@ -696,8 +723,9 @@ function switchTab(id) {
 function switchCat(id) { activeCat = id; renderCatalog(); }
 
 // ── keypad sheet ──
-function openKeypad(code) { keypad = { code }; keypadBuf = String(qty[code] || ''); renderKeypad(); }
-function closeKeypad() { keypad = null; keypadBuf = ''; document.getElementById('keypad').classList.add('hidden'); }
+function openKeypad(code) { keypad = { code }; keypadBuf = String(qty[code] || ''); keypadEntry = { back: rawCloseKeypad }; openOverlay(keypadEntry); renderKeypad(); }
+function rawCloseKeypad() { keypad = null; keypadBuf = ''; document.getElementById('keypad').classList.add('hidden'); }
+function closeKeypad() { const e = keypadEntry; keypadEntry = null; rawCloseKeypad(); unwindOverlay(e); }
 function keyTap(d) {
   if (d === 'back') keypadBuf = keypadBuf.slice(0, -1);
   else if ((keypadBuf + d).length <= 4) keypadBuf = (keypadBuf === '0' ? '' : keypadBuf) + d;
@@ -836,8 +864,14 @@ function applyEditDeadlineState() {
 }
 
 // ══════════════════ CLARIFICATIONS ══════════════════
-function openClarify(kind, idx) { clarify = { kind, idx }; variantSel = {}; renderClarify(); }
-function closeClarify() { clarify = null; variantSel = {}; document.getElementById('clarify').classList.add('hidden'); }
+function openClarify(kind, idx) {
+  clarify = { kind, idx }; variantSel = {};
+  clarifyEntry = { back: rawCloseClarify };
+  openOverlay(clarifyEntry);   // push BEFORE render so an early rawCloseClarify (item vanished) unwinds it
+  renderClarify();
+}
+function rawCloseClarify() { clarify = null; variantSel = {}; document.getElementById('clarify').classList.add('hidden'); }
+function closeClarify() { const e = clarifyEntry; clarifyEntry = null; rawCloseClarify(); unwindOverlay(e); }
 function clarifyBackdrop(e) { if (e.target === e.currentTarget) closeClarify(); }
 
 function pickUnmatched(code) {
@@ -986,6 +1020,8 @@ function clearToast() { clearTimeout(toastTimer); document.getElementById('toast
 function askConfirm(opts) {
   return new Promise(resolve => {
     confirmResolve = resolve;
+    confirmEntry = { back: () => rawResolveConfirm(false) };
+    openOverlay(confirmEntry);
     const el = document.getElementById('confirm');
     el.className = 'confirm-backdrop';
     el.innerHTML =
@@ -1001,7 +1037,7 @@ function askConfirm(opts) {
     el.setAttribute('onclick', 'confirmBackdrop(event)');
   });
 }
-function resolveConfirm(v) {
+function rawResolveConfirm(v) {
   const el = document.getElementById('confirm');
   el.classList.add('hidden');
   el.setAttribute('onclick', '');
@@ -1009,6 +1045,7 @@ function resolveConfirm(v) {
   const r = confirmResolve; confirmResolve = null;
   if (r) r(v);
 }
+function resolveConfirm(v) { const e = confirmEntry; confirmEntry = null; rawResolveConfirm(v); unwindOverlay(e); }
 function confirmBackdrop(e) { if (e.target === e.currentTarget) resolveConfirm(false); }
 function showPosting(text) { const t = document.getElementById('posting-text'); if (t && text) t.textContent = text; document.getElementById('posting').classList.remove('hidden'); }
 function hidePosting() { document.getElementById('posting').classList.add('hidden'); }
