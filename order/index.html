@@ -884,7 +884,10 @@ function clarifyBackdrop(e) { if (e.target === e.currentTarget) closeClarify(); 
 
 function pickUnmatched(code) {
   const it = unmatchedItems[clarify.idx];
-  setQty(code, (qty[code] || 0) + 1);
+  // Add the quantity the customer actually asked for ("× 12 יחידות"), which the server sends
+  // with the clarification. Only not_found_items arrive without one → fall back to 1.
+  const q = Number(it && it.quantity) || 1;
+  setQty(code, (qty[code] || 0) + q);
   if (it && it.text) resolvedAliases.push({ raw_text: it.text, sku_code: code, fat_pct: (it.fat_pct != null ? it.fat_pct : null) });
   unmatchedItems.splice(clarify.idx, 1);
   closeClarify();
