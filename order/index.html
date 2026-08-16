@@ -1051,7 +1051,9 @@ function listCard(code, name, suggested) {
   const col = catColorForCode(code);
   const initial = (name || '?').trim()[0] || '·';
   const q = qty[code] || 0;
-  const tag = (suggested && !q) ? '<span class="ltag">מוצע ' + suggested + '</span>' : '';
+  // The "מוצע" tag is always rendered when there is a suggestion, just hidden while the product has
+  // a quantity — removing it would make it unrecoverable after a reset (see refreshCard).
+  const tag = suggested ? '<span class="ltag' + (q ? ' hidden' : '') + '">מוצע ' + suggested + '</span>' : '';
   // The list scrolls vertically, which is what loading="lazy" is actually good at — but the same
   // initial-underneath structure keeps a slow or missing thumbnail from looking broken.
   const thumb = '<div class="lthumb" style="background:' + col.bg + ';color:' + col.fg + '">' +
@@ -1070,7 +1072,7 @@ function productCard(code, name, suggested) {
   const col = catColorForCode(code);
   const initial = (name || '?').trim()[0] || '·';
   const q = qty[code] || 0;
-  const tag = (suggested && !q) ? '<span class="ptag">מוצע ' + suggested + '</span>' : '';
+  const tag = suggested ? '<span class="ptag' + (q ? ' hidden' : '') + '">מוצע ' + suggested + '</span>' : '';
   const badge = q > 0 ? '<span class="pqty-badge">' + q + '</span>' : '';
   // The photo carries data-src, NOT src — hydratePages() decides when it is fetched (see there).
   // The tinted initial underneath covers "no photo", "not loaded yet" and "failed" alike.
@@ -1113,11 +1115,13 @@ function refreshCard(code) {
   if (q > 0) {
     if (!badge && thumb) { badge = document.createElement('span'); badge.className = 'pqty-badge'; thumb.appendChild(badge); }
     if (badge) badge.textContent = q;
-    const tag = card.querySelector('.ptag, .ltag');   // a favourite's "מוצע" tag goes once it has a quantity
-    if (tag) tag.remove();
   } else if (badge) {
     badge.remove();
   }
+  // A favourite's "מוצע" tag hides while the product has a quantity and comes BACK at zero — after
+  // "אפס כמויות" the customer needs to see what adopting again would put in the cart.
+  const tag = card.querySelector('.ptag, .ltag');
+  if (tag) tag.classList.toggle('hidden', q > 0);
 }
 
 function updateBars() {
