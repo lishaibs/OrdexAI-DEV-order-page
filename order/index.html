@@ -514,6 +514,11 @@ const IMG_ZOOM   = parseFloat(Q.get('zoom')) || null;
 let pageIndex = 0;            // active page in the pager
 let pagerObserver = null;     // IntersectionObserver tracking which page is on screen
 let pagerSig = null;          // tab|category|search of the rendered pager — page index survives a re-render of the same list
+// Each category remembers its own page. Leaving "מאפים מתוקים" on page 3 and coming back to it
+// should land on page 3, while switching to a different category starts that category at its own
+// page 1 — one shared index made the second category open on a page the customer never chose.
+let pageMemory = Object.create(null);   // "tab|cat|search" -> page index
+let idleWarm = null;          // handle for the background photo warm-up (see warmGroup)
 let pageSize = MAX_PER_PAGE;  // products per page as last measured (see computeLayout)
 let hintShown = false;        // the "swipe sideways" nudge is shown once per session
 let catalog = null;
@@ -880,10 +885,11 @@ function renderPager() {
   applyLayout(L);
 
   // Coming back from the cart re-renders the catalog — stay on the page the customer was on.
-  // A different tab / category / search is a different catalog → start from the first page.
+  // A different tab / category / search is a different list, so it resumes at ITS OWN remembered
+  // page (first visit → page 1), not at the page index the previous category happened to be on.
   // A rotation changes how many fit, so the old index is rescaled to the new page size.
   const sig = [activeTab, activeCat, searchQuery].join('|');
-  let restore = (sig === pagerSig) ? pageIndex : 0;
+  let restore = (sig === pagerSig) ? pageIndex : (pageMemory[sig] || 0);
   if (restore && prevSize !== pageSize) restore = Math.floor(restore * prevSize / pageSize);
   pagerSig = sig;
   pageIndex = 0;
@@ -897,16 +903,16 @@ function renderPager() {
   // Chunk each group into pages that fit. A partial page keeps the same grid so the cards never
   // change size between pages — only the empty slots differ.
   const pages = [];
-  built.groups.forEach(g => {
+  built.groups.forEach((g, gi) => {
     const total = Math.ceil(g.items.length / pageSize) || 1;
     for (let i = 0; i < g.items.length; i += pageSize) {
-      pages.push({ title: g.title, items: g.items.slice(i, i + pageSize), part: (i / pageSize) + 1, total });
+      pages.push({ title: g.title, items: g.items.slice(i, i + pageSize), part: (i / pageSize) + 1, total, group: gi });
     }
   });
 
   const start = Math.min(restore, pages.length - 1);
   pager.innerHTML = pages.map((p, i) =>
-    '<section class="page' + (i === start ? ' active' : '') + '" data-i="' + i + '">' +
+    '<section class="page' + (i === start ? ' active' : '') + '" data-i="' + i + '" data-g="' + p.group + '">' +
       '<div class="page-head"><span class="page-title">' + esc(p.title) + '</span>' +
         '<span class="page-meta">' + (p.total > 1 ? p.part + '/' + p.total : p.items.length + ' מוצרים') + '</span></div>' +
       '<div class="page-grid">' + p.items.map(it => productCard(it.code, it.name, it.suggested)).join('') + '</div>' +
@@ -923,9 +929,15 @@ function renderPager() {
   if (!hintShown && pages.length > 1) { hintShown = true; setTimeout(() => hint.classList.add('hidden'), 4000); }
 
   pageIndex = start;
+  pageMemory[sig] = start;
   hydratePages(start);
-  if (start > 0) goPage(start, 'auto');   // jump (not animate) back to where the customer was
+  // ALWAYS position the scroller, including at page 0. Replacing innerHTML does NOT reset
+  // scrollLeft on a horizontal scroll container, so switching category used to leave the pager
+  // sitting at the previous category's offset — the observer then reported "3 / 5" for a list the
+  // customer had just opened. scrollIntoView (not scrollLeft = 0) because the pager is RTL.
+  goPage(start, 'auto');                  // jump (not animate) to where this list should open
   observePages();
+  warmGroup(start);                       // background-load the rest of this category
 }
 
 // Fit one whole page on screen: pager height = what's left between it and the sticky bottom bar.
@@ -986,21 +998,59 @@ function observePages() {
 // WebView that WhatsApp opens links in has been unreliable. Measured on the Ariel catalog, leaving
 // it to the browser fetched all 57 photos of a category — 8.3MB — to show four of them.
 // Driving it from the pager's own IntersectionObserver is deterministic and testable instead.
-const PRELOAD_PAGES = 1;    // pages either side of the current one to keep loaded
+const PRELOAD_PAGES = 2;    // pages either side of the current one to fetch immediately
+function hydratePage(p) {
+  p.querySelectorAll('img[data-src]').forEach(img => {
+    img.src = img.getAttribute('data-src');
+    img.removeAttribute('data-src');
+  });
+}
 function hydratePages(center) {
   document.querySelectorAll('#pager .page').forEach(p => {
     if (Math.abs(Number(p.dataset.i) - center) > PRELOAD_PAGES) return;
-    p.querySelectorAll('img[data-src]').forEach(img => {
-      img.src = img.getAttribute('data-src');
-      img.removeAttribute('data-src');
-    });
+    hydratePage(p);
   });
+}
+
+// Then quietly finish the REST of the current category in the background.
+//
+// What makes the photos feel slow is latency, not bytes: each one is only ~9KB, but Supabase
+// Storage answers in 120-165ms and occasionally ~1.4s. No amount of tuning makes a single request
+// faster — the only fix is to have asked for it earlier. So once the visible pages are on their
+// way, walk the rest of this category during idle time; by the time a swipe lands anywhere in it
+// the photo is already decoded.
+//
+// This is safe now in a way it was NOT when the grid was written. That warning ("leaving it to the
+// browser fetched all 57 photos of a category — 8.3MB") measured the ORIGINAL studio images.
+// prepare_photos.py cut them to ~9KB, so a whole 57-product category is now ~0.5MB. Deliberately
+// bounded to the current category rather than the whole catalog: the customer chose this one.
+const WARM_CHUNK = 2;       // pages per idle slice, so a slow connection is never flooded
+function warmGroup(center) {
+  if (idleWarm) { (window.cancelIdleCallback || clearTimeout)(idleWarm); idleWarm = null; }
+  const pager = document.getElementById('pager');
+  const here = pager.querySelector('.page[data-i="' + center + '"]');
+  if (!here) return;
+  const group = here.dataset.g;
+  // Nearest-first: the next swipe is far likelier to be forwards from here than at the far end.
+  const queue = Array.from(pager.querySelectorAll('.page[data-g="' + group + '"]'))
+    .filter(p => p.querySelector('img[data-src]'))
+    .sort((a, b) => Math.abs(a.dataset.i - center) - Math.abs(b.dataset.i - center));
+  if (!queue.length) return;
+
+  const idle = window.requestIdleCallback || (fn => setTimeout(() => fn({ timeRemaining: () => 8 }), 200));
+  const step = () => {
+    for (let n = 0; n < WARM_CHUNK && queue.length; n++) hydratePage(queue.shift());
+    idleWarm = queue.length ? idle(step) : null;
+  };
+  idleWarm = idle(step);
 }
 
 function setActivePage(i) {
   if (i === pageIndex) return;
   pageIndex = i;
+  if (pagerSig !== null) pageMemory[pagerSig] = i;   // this category resumes here next visit
   hydratePages(i);            // the next page is already warm by the time it is swiped to
+  warmGroup(i);               // and keep filling in the rest of the category behind it
   const pager = document.getElementById('pager');
   pager.querySelectorAll('.page').forEach(p => p.classList.toggle('active', Number(p.dataset.i) === i));
   const dots = document.getElementById('pagedots');
