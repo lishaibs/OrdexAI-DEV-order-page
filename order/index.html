@@ -99,6 +99,9 @@ input[type=search]::-webkit-search-cancel-button{display:none}
   height:34px;padding:0 14px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px}
 .hero-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.4}
 .hero-btn:active{background:var(--wa-soft)}
+/* adopted → the same button undoes it, in red */
+.hero-btn.danger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-line)}
+.hero-btn.danger:active{background:#f9dede}
 
 /* ── PAGER: 10 products per page (2 cols × 5 rows), pages snap sideways ──
    The pager's height AND how many products a page holds are measured in JS (computeLayout), so a
@@ -261,11 +264,14 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .sheet-handle{width:38px;height:4px;border-radius:2px;background:var(--line-2);margin:2px auto 12px}
 .keypad-name{text-align:center;font-size:14px;font-weight:700;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .keypad-val{text-align:center;font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;margin:6px 0 4px;letter-spacing:-.02em}
+/* still replaceable: shown selected, the way a highlighted field says "type to overwrite" */
+.keypad-val.fresh{display:block;width:fit-content;margin-inline:auto;padding:0 14px;border-radius:12px;
+  background:var(--wa-soft);color:var(--wa-deep);box-shadow:inset 0 0 0 1.5px var(--wa-line)}
 .keypad-presets{display:flex;gap:8px;justify-content:center;margin:8px 0 14px}
 .kp-preset{background:var(--wa-soft);color:var(--wa-deep);border:1.5px solid var(--wa-line);border-radius:999px;padding:8px 16px;font-size:14px;font-weight:800}
 .keypad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
 .kp-key{height:56px;border-radius:14px;font-size:22px;font-weight:700;color:var(--ink);background:var(--app);border:1px solid #e3ede8}
-.kp-key.back{background:#f0f6f2;border:none}
+.kp-key.back{background:var(--danger-bg);border:1px solid var(--danger-line);color:var(--danger)}
 .kp-key.blank{visibility:hidden}
 .keypad-confirm{width:100%;margin-top:12px;background:var(--wa);color:var(--wa-ink);font-weight:800;font-size:16px;padding:15px;border-radius:13px}
 .clarify-title{font-size:15.5px;font-weight:800;margin-bottom:4px;text-wrap:pretty}
@@ -525,6 +531,8 @@ let droppedUnmatched = [];    // raw texts the customer marked "not in the list"
 let editUntilEpoch = null;    // edit deadline (unix seconds); null for new orders
 let keypad = null;            // { code } while the numeric sheet is open
 let keypadBuf = '';
+let keypadFresh = true;       // the keypad opens in overwrite mode: the first digit replaces the qty
+let adoptedSnapshot = null;   // qty before "adopt" ran — non-null means the hero button shows "reset"
 let clarify = null;           // { kind:'unmatched'|'variants', idx }
 let variantSel = {};          // sku_code -> true (checkbox multi-select)
 let lastRemoved = null;       // { code, qty } for the undo toast
@@ -803,9 +811,16 @@ function renderHero() {
   }
   el.classList.remove('hidden');
   el.className = 'hero';
+  // Adopted → the same button undoes it, in red. Tapping again re-adopts.
+  const btn = adoptedSnapshot
+    ? '<button class="hero-btn danger" onclick="resetAdopt()">' +
+        '<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4" stroke-linecap="round" stroke-linejoin="round"></path></svg>' +
+        'אפס כמויות</button>'
+    : '<button class="hero-btn" onclick="adopt()">' +
+        '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>' +
+        'אמץ כמויות</button>';
   el.innerHTML =
-    '<div class="hero-line">' + catalog.favorites.length + ' מוצרים קבועים לפי ההרגל שלך</div>' +
-    '<button class="hero-btn" onclick="adopt()"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>אמץ כמויות</button>';
+    '<div class="hero-line">' + catalog.favorites.length + ' מוצרים קבועים לפי ההרגל שלך</div>' + btn;
 }
 
 // Build the display groups for the current tab / category / search — unchanged from the live page.
@@ -1167,11 +1182,26 @@ function undoRemove() {
 function addSuggested(code, q) { setQty(code, q); refreshCard(code); updateBars(); renderCart(); toast(findSku(code).name + ' × ' + q); }
 
 // ── fastest path: adopt the suggested quantities (stay on the page; no jump to cart) ──
+// The hero button toggles: adopt → reset → adopt. Reset restores the cart to exactly what it was
+// before adopting (not zero), so a customer who already had items doesn't lose them by undoing.
 function adopt() {
+  adoptedSnapshot = { ...qty };                       // remember what to undo back to
   // Update the cards in place rather than re-rendering: the pager keeps the page the customer is on.
   (catalog.favorites || []).forEach(f => { setQty(f.sku_code, f.suggested_qty); refreshCard(f.sku_code); });
   updateBars();
+  renderHero();                                       // button becomes "reset"
   toast('אומצו הכמויות המוצעות');
+}
+function resetAdopt() {
+  const before = adoptedSnapshot || {};
+  const touched = new Set([...Object.keys(qty), ...Object.keys(before)]);
+  qty = { ...before };
+  adoptedSnapshot = null;
+  touched.forEach(refreshCard);
+  updateBars();
+  renderHero();                                       // button becomes "adopt" again
+  if (activeView === 'cart') renderCart();
+  toast('הכמויות אופסו');
 }
 
 // ── search ──
@@ -1194,15 +1224,34 @@ function switchTab(id) {
 function switchCat(id) { activeCat = id; renderCatalog(); }
 
 // ── keypad sheet ──
-function openKeypad(code) { keypad = { code }; keypadBuf = String(qty[code] || ''); keypadEntry = { back: rawCloseKeypad }; openOverlay(keypadEntry); renderKeypad(); }
+function openKeypad(code) { keypad = { code }; keypadBuf = String(qty[code] || ''); keypadFresh = true; keypadEntry = { back: rawCloseKeypad }; openOverlay(keypadEntry); renderKeypad(); }
 function rawCloseKeypad() { keypad = null; keypadBuf = ''; document.getElementById('keypad').classList.add('hidden'); }
 function closeKeypad() { const e = keypadEntry; keypadEntry = null; rawCloseKeypad(); unwindOverlay(e); }
+// Overwrite mode: the keypad opens showing the current quantity, and the FIRST digit typed replaces
+// it rather than appending — retyping a quantity is the common case, editing its digits is not.
+// The shown value is highlighted while it is still replaceable, so the behaviour is visible.
 function keyTap(d) {
-  if (d === 'back') keypadBuf = keypadBuf.slice(0, -1);
-  else if ((keypadBuf + d).length <= 4) keypadBuf = (keypadBuf === '0' ? '' : keypadBuf) + d;
-  document.getElementById('kp-val').textContent = keypadBuf || '0';
+  if (d === 'back') {
+    keypadBuf = keypadFresh ? '' : keypadBuf.slice(0, -1);   // backspace on a fresh value clears it
+    keypadFresh = false;
+  } else {
+    if (keypadFresh) { keypadBuf = ''; keypadFresh = false; }
+    if ((keypadBuf + d).length <= 4) keypadBuf = (keypadBuf === '0' ? '' : keypadBuf) + d;
+  }
+  paintKeypadValue();
 }
-function keyPreset(n) { keypadBuf = String(Math.min(MAX_QTY, (parseInt(keypadBuf) || 0) + n)); document.getElementById('kp-val').textContent = keypadBuf; }
+// "+5" means add to what is there, so a preset builds on the current value and ends overwrite mode.
+function keyPreset(n) {
+  keypadBuf = String(Math.min(MAX_QTY, (parseInt(keypadBuf) || 0) + n));
+  keypadFresh = false;
+  paintKeypadValue();
+}
+function paintKeypadValue() {
+  const el = document.getElementById('kp-val');
+  if (!el) return;
+  el.textContent = keypadBuf || '0';
+  el.classList.toggle('fresh', keypadFresh);
+}
 function keyConfirm() {
   const code = keypad.code;
   setQty(code, parseInt(keypadBuf) || 0);
@@ -1228,7 +1277,7 @@ function renderKeypad() {
     '<div class="sheet" onclick="event.stopPropagation()">' +
       '<div class="sheet-handle"></div>' +
       '<div class="keypad-name">' + esc(findSku(keypad.code).name) + '</div>' +
-      '<div class="keypad-val" id="kp-val">' + (keypadBuf || '0') + '</div>' +
+      '<div class="keypad-val' + (keypadFresh ? ' fresh' : '') + '" id="kp-val">' + (keypadBuf || '0') + '</div>' +
       '<div class="keypad-presets">' + presets + '</div>' +
       '<div class="keypad-grid">' + grid + '</div>' +
       '<button class="keypad-confirm" onclick="keyConfirm()">אישור</button>' +
