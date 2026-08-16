@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>הזמנה</title>
+<title>הזמנה · תצוגת תמונות</title>
+<!-- ─────────────────────────────────────────────────────────────────────────────
+     EXPERIMENTAL COPY of /order/index.html — image-first catalog.
+     Differences from the live page (everything else is identical behaviour):
+       • the product list is a horizontal PAGER: 10 products per page, 2 columns × 5 rows
+       • pages snap sideways; ~28px of the neighbouring page always peeks so the
+         customer can see there is more to explore; dots below show position
+       • each product card leads with a photo (falls back to the tinted initial)
+     Image source is resolved by convention — see the IMAGES block in the script.
+     ───────────────────────────────────────────────────────────────────────────── -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -57,9 +66,9 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .clarify-row-label{font-size:13.5px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .clarify-cta{flex:none;background:#fff;color:var(--amber-ink);border:1px solid var(--amber-line-2);padding:8px 15px;border-radius:999px;font-size:12.5px;font-weight:800}
 
-/* search */
-.searchbar{padding:12px 14px 6px}
-.searchbar-inner{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:0 1px 2px rgba(12,59,43,.04)}
+/* search — tighter than the live page: every pixel above the pager is a pixel off the photos */
+.searchbar{padding:9px 14px 3px}
+.searchbar-inner{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 13px;box-shadow:0 1px 2px rgba(12,59,43,.04)}
 .searchbar-inner svg{width:19px;height:19px;stroke:var(--ink-3);fill:none;stroke-width:2;flex:none}
 .search-input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:15px;color:var(--ink);padding:0}
 .search-input::placeholder{color:var(--ink-4)}
@@ -75,39 +84,107 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .tab-dot{width:6px;height:6px;border-radius:50%;background:#e8a53a}
 .tab.on .tab-dot{display:none}
 /* Categories = filter PILLS (rounded chips) — deliberately different from the tabs above. */
-.cats{display:flex;gap:7px;overflow-x:auto;padding:10px 14px 4px}
+.cats{display:flex;gap:7px;overflow-x:auto;padding:8px 14px 2px}
 .pill{flex:none;padding:8px 15px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;background:var(--surface);color:var(--ink-2);border:1px solid var(--line)}
 .pill.on{background:var(--green);color:#fff;border-color:var(--green)}
 
-/* hero */
-.hero{margin:12px 14px 6px;background:var(--wa-soft);border:1px solid var(--wa-line);border-radius:16px;padding:14px 16px}
-.hero-kick{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--wa-deep)}
-.hero-line{font-size:15px;font-weight:700;margin-top:3px;color:var(--ink);letter-spacing:-.01em;text-wrap:pretty}
-.hero-btn{width:100%;margin-top:12px;background:#fff;color:var(--wa-deep);border:1.5px solid var(--wa-line);border-radius:12px;padding:12px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px}
-.hero-btn svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.4}
+/* hero — one compact row here rather than the live page's stacked card: the height it used to take
+   came straight out of the product photos below it */
+.hero{margin:8px 14px 0;background:var(--wa-soft);border:1px solid var(--wa-line);border-radius:14px;
+  padding:8px 10px 8px 12px;display:flex;align-items:center;gap:10px}
+.hero-kick{display:none}
+.hero-line{flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-btn{flex:none;background:#fff;color:var(--wa-deep);border:1.5px solid var(--wa-line);border-radius:10px;
+  height:34px;padding:0 14px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px}
+.hero-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.4}
 .hero-btn:active{background:var(--wa-soft)}
 
-/* product groups + cards */
-#plist{padding-bottom:150px}
-.group{margin-top:14px}
+/* ── PAGER: 10 products per page (2 cols × 5 rows), pages snap sideways ──
+   The pager's height AND how many products a page holds are measured in JS (computeLayout), so a
+   whole page always fits the screen — sideways swiping is the only way through the catalog.
+   Peek: the container is padded 14px while a page is (100% − 54px) wide, so ~28px of
+   the neighbouring page stays visible — the affordance that says "there's more". */
+.pager{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;
+  padding:8px 14px 2px;scroll-padding-inline:14px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.page{flex:0 0 calc(100% - 54px);min-width:0;display:flex;flex-direction:column;
+  scroll-snap-align:start;scroll-snap-stop:always;opacity:.5;transition:opacity .22s ease}
+.page.active{opacity:1}
+.page-head{display:flex;align-items:baseline;gap:8px;padding:0 4px 6px;min-height:20px}
+.page-title{font-size:13.5px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.page-meta{margin-inline-start:auto;flex:none;font-size:11px;color:var(--ink-3);font-weight:700;font-variant-numeric:tabular-nums}
+/* Row count and row height are both measured in JS (computeLayout): the grid holds exactly the
+   rows that fit, and the cards grow to fill the leftover. Nothing here ever scrolls vertically —
+   a page that doesn't fit is a page with fewer products on it, not a page you scroll. */
+.page-grid{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:var(--card-h,140px);gap:8px;overflow:hidden}
+/* ?per= pins a count the screen may not fit — scroll rather than silently clip products away */
+.pager.forced .page-grid{overflow-y:auto;overscroll-behavior-y:contain}
+/* dots — position within the whole catalog, tappable. Fixed height so the maths above is stable. */
+.pagedots{height:22px;display:flex;justify-content:center;align-items:center;gap:5px;padding:6px 14px 0;overflow:hidden}
+.pdot{width:7px;height:7px;flex:none;border-radius:999px;background:var(--line-2);transition:all .22s ease}
+.pdot.on{width:20px;background:var(--green)}
+/* overlay, so the nudge costs the grid no height */
+.swipe-hint{position:absolute;inset-inline:0;bottom:26px;text-align:center;pointer-events:none;
+  font-size:11.5px;font-weight:700;color:var(--ink-3);animation:om-fade .4s ease}
+.swipe-hint span{background:rgba(245,248,246,.92);padding:3px 12px;border-radius:999px}
+
+/* product card — the photo takes every pixel the name and the button don't need. The product code
+   and the "מוצע" tag sit ON the photo rather than on their own lines, which is what buys the photo
+   its height in a card this short. */
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px;
+  display:flex;flex-direction:column;gap:4px;min-height:0;min-width:0;overflow:hidden}
+.pcard.has-qty{border:1.5px solid #9fdfba;box-shadow:0 4px 14px rgba(37,211,102,.12)}
+.pthumb{position:relative;flex:1;min-height:56px;border-radius:10px;overflow:hidden;display:grid;place-items:center}
+/* The tinted initial always sits in the thumb; the photo lies on top and fades in over it. So a
+   product with no photo, one whose photo is still loading, and one whose photo 404s all look
+   deliberate rather than broken — and there is never a white flash. */
+.pthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:var(--fit,cover);display:block;
+  transform:scale(var(--zoom,1));opacity:0;transition:opacity .18s ease}
+.pthumb img.on{opacity:1}
+.pinitial{font-family:'Plus Jakarta Sans';font-weight:800;font-size:26px;line-height:1}
+.pqty-badge{position:absolute;top:4px;inset-inline-end:4px;min-width:23px;height:23px;padding:0 6px;border-radius:999px;
+  background:var(--wa);color:var(--wa-ink);font-size:12px;font-weight:800;display:grid;place-items:center;border:2px solid #fff;font-variant-numeric:tabular-nums}
+.ptag{position:absolute;top:4px;inset-inline-start:4px;font-size:10px;font-weight:800;color:var(--amber-ink);
+  background:var(--amber-bg);padding:2px 7px;border-radius:999px;border:1px solid var(--amber-line)}
+.pcode{position:absolute;bottom:3px;inset-inline-start:4px;font-size:9px;font-family:ui-monospace,Menlo,monospace;
+  color:var(--ink-4);background:rgba(255,255,255,.72);padding:1px 4px;border-radius:999px;letter-spacing:-.02em}
+.pname{flex:none;height:28px;font-size:11.5px;font-weight:600;line-height:1.22;padding:0 2px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.add-btn{width:100%;height:32px;flex:none;background:var(--wa-soft);color:var(--wa-deep);border:1.5px solid var(--wa-line);
+  border-radius:10px;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:5px}
+.add-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.6}
+.stepper{display:flex;align-items:center;gap:4px;flex:none}
+.qbtn{width:32px;height:32px;flex:none;border-radius:10px;display:grid;place-items:center;font-size:19px;font-weight:500}
+.qbtn.minus{border:1.5px solid var(--line-2);background:#fff;color:var(--ink-2)}
+.qbtn.plus{border:1.5px solid var(--wa);background:var(--wa);color:#fff}
+.qnum{flex:1;min-width:0;height:32px;padding:0 4px;font-size:15px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;display:grid;place-items:center;border-radius:8px;background:#f0f6f2}
+/* the clarify box + cart keep the roomier controls of the live page */
+.clarify-row .qbtn,.crow-ctrls .qbtn{width:40px;height:40px;border-radius:11px;font-size:20px}
+.clarify-row .qnum,.crow-ctrls .qnum{flex:none;min-width:40px;height:40px;font-size:16px}
+/* ── LIST layout — for orgs with few or no photos. A grid of letter tiles reads as broken;
+   a list with a thumbnail where one exists reads as a catalog. Same cards, same actions. */
+.list{padding-bottom:150px}
+.group{margin-top:12px}
 .group-head{padding:4px 18px 6px;display:flex;align-items:baseline;gap:8px}
 .group-title{font-size:15px;font-weight:800;letter-spacing:-.01em}
 .group-meta{font-size:12px;color:var(--ink-3);font-weight:600}
-.pcard{background:var(--surface);margin:0 14px 8px;border-radius:16px;display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line)}
-.pcard.has-qty{border:1.5px solid #9fdfba;box-shadow:0 4px 14px rgba(37,211,102,.12)}
-.pavatar{width:46px;height:46px;flex:none;border-radius:12px;display:grid;place-items:center;font-family:'Plus Jakarta Sans';font-weight:800;font-size:19px}
-.pinfo{flex:1;min-width:0}
-.pname{font-size:14px;font-weight:600;line-height:1.3;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.pmeta{display:flex;align-items:center;gap:8px;margin-top:4px}
-.psku{font-size:11px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
-.ptag{font-size:10.5px;font-weight:800;color:var(--amber-ink);background:var(--amber-bg);padding:2px 8px;border-radius:999px;border:1px solid var(--amber-line)}
-.add-btn{flex:none;background:var(--wa-soft);color:var(--wa-deep);border:1.5px solid var(--wa-line);height:44px;padding:0 18px;border-radius:12px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px}
-.add-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.6}
-.stepper{display:flex;align-items:center;gap:4px;flex:none}
-.qbtn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;font-weight:500}
-.qbtn.minus{border:1.5px solid var(--line-2);background:#fff;color:var(--ink-2)}
-.qbtn.plus{border:1.5px solid var(--wa);background:var(--wa);color:#fff}
-.qnum{min-width:40px;height:44px;padding:0 6px;font-size:17px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;display:grid;place-items:center;border-radius:8px;background:#f0f6f2}
+.lcard{background:var(--surface);margin:0 14px 8px;border-radius:16px;display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--line)}
+.lcard.has-qty{border:1.5px solid #9fdfba;box-shadow:0 4px 14px rgba(37,211,102,.12)}
+.lthumb{position:relative;width:52px;height:52px;flex:none;border-radius:12px;overflow:hidden;display:grid;place-items:center}
+.lthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  transform:scale(var(--zoom,1));opacity:0;transition:opacity .18s ease}
+.lthumb img.on{opacity:1}
+.linfo{flex:1;min-width:0}
+.lname{font-size:14px;font-weight:600;line-height:1.3;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lmeta{display:flex;align-items:center;gap:8px;margin-top:3px}
+.lsku{font-size:11px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
+.ltag{font-size:10.5px;font-weight:800;color:var(--amber-ink);background:var(--amber-bg);padding:2px 8px;border-radius:999px;border:1px solid var(--amber-line)}
+/* the list has room for the live page's full-size controls */
+.lcard .pcard-action{flex:none}
+.lcard .add-btn{width:auto;height:42px;padding:0 18px;font-size:14px;border-radius:12px}
+.lcard .stepper{gap:4px}
+.lcard .qbtn{width:42px;height:42px;border-radius:12px;font-size:21px}
+.lcard .qnum{flex:none;min-width:40px;height:42px;font-size:17px}
 .empty-list{text-align:center;padding:60px 24px;color:var(--ink-3)}
 .empty-list-ico{width:56px;height:56px;border-radius:50%;background:#eef3f0;display:grid;place-items:center;margin:0 auto 12px}
 .empty-list-ico svg{width:24px;height:24px;stroke:var(--ink-4);fill:none;stroke-width:1.7}
@@ -267,7 +344,15 @@ input[type=search]::-webkit-search-cancel-button{display:none}
       <div id="tabs" class="tabs"></div>
       <div id="cats" class="cats hidden"></div>
       <div id="hero" class="hidden"></div>
-      <div id="plist"></div>
+      <div id="plist" style="position:relative">
+        <!-- grid layout (photos) -->
+        <div id="pager" class="pager"></div>
+        <div id="pagedots" class="pagedots"></div>
+        <div id="swipe-hint" class="swipe-hint hidden"><span>← החליקו הצידה לעוד מוצרים</span></div>
+        <!-- list layout (few or no photos) — the live page's vertical list, with a thumbnail
+             where one exists. Chosen automatically per org; see resolveLayout(). -->
+        <div id="list" class="list hidden"></div>
+      </div>
       <div class="catalog-bar" id="catalog-bar">
         <button class="bar-btn" id="bar-btn" onclick="goCart()">בחר מוצרים כדי להתחיל</button>
       </div>
@@ -313,7 +398,118 @@ const CAT_COLORS = {
   OTHER:{bg:'#eef3f0',fg:'#3f574c'},
 };
 
+// ══════════════════ IMAGES ══════════════════
+// Product photos are resolved BY CONVENTION from a public bucket — no DB column, no backend
+// change: drop a file named after the SKU code into the org's folder and it appears.
+//
+//   {IMG_BASE}/{orgId}/{sku_code}.{IMG_EXT}
+//
+// mirroring the existing tutorial-videos bucket layout (src/utils/welcomeVideo.js).
+// A missing/broken image falls back to the tinted category initial — never a broken-image icon.
+//
+// Test-page overrides (query string, so nothing needs redeploying to try another source):
+//   ?img=<baseUrl>   point at any host / local folder      (default: the Supabase bucket below)
+//   ?org=<uuid>      the per-org folder segment            (omit → files sit flat in the bucket)
+//   ?imgext=jpg      file extension                        (default: webp)
+//
+// OFFLINE DEMO (?demo=…) — no backend, no token, nothing is sent anywhere. Run demo-server.js.
+//   ?demo=ariel      the Ariel Bakery catalog with its real product photos
+//   ?demo=tiles      the same catalog with generated placeholder tiles instead of photos
+//   ?clarify=1       also open with clarification / "מכל סוג" questions pending
+const Q         = new URLSearchParams(location.search);
+const IMG_BASE  = (Q.get('img') || 'https://noxzdedrjbepwakcdsfh.supabase.co/storage/v1/object/public/product-images').replace(/\/+$/, '');
+const IMG_ORG   = Q.get('org') || '';
+const IMG_EXT   = (Q.get('imgext') || 'webp').replace(/^\./, '');
+const DEMO      = (Q.get('demo') || '').toLowerCase();        // '' = live page against the real API
+const DEMO_ON   = DEMO !== '';
+const IMG_DEMO  = DEMO === 'tiles' || DEMO === '1';           // draw tiles instead of loading files
+const DEMO_SET  = IMG_DEMO ? 'ariel' : DEMO;                  // which dataset to load offline
+// ?img=/?org= means "I am pointing this at a bucket on purpose" — assume every product has a photo
+// there, since the page has no other way to know and the whole point is to look at that bucket.
+const BUCKET_TEST = !!(Q.get('img') || Q.get('org'));
+const CAT_EMOJI = {
+  MOZZARELLA:'🧀', WHITE_BRINE:'🧀', HARD_CHEESE:'🧀', CREAM_CHEESE:'🥛', RICOTTA:'🥣',
+  HALLOUMI:'🧀', GOAT_SHEEP:'🐐', CREAM:'🥛', YOGURT:'🥛', MILK:'🥛', BUTTER:'🧈',
+  DESSERTS:'🍮', PASTA:'🍝', SPREADS:'🥄', OTHER:'📦',
+};
+
+function imageUrl(code) {
+  if (IMG_DEMO) return demoTile(code);
+  const s = findSku(code);
+  if (s && s.image) return s.image;      // catalog data carries an explicit path per product
+  const folder = IMG_ORG ? encodeURIComponent(IMG_ORG) + '/' : '';
+  return IMG_BASE + '/' + folder + encodeURIComponent(code) + '.' + IMG_EXT;
+}
+// Does this product have a photo we KNOW about? Only the backend can answer that — the page must
+// never probe the bucket per SKU. Anything else is a guess, and a grid full of guesses that 404
+// is worse than no grid at all.
+function hasImage(code) {
+  if (IMG_DEMO || BUCKET_TEST) return true;
+  const s = findSku(code);
+  return !!(s && s.image);
+}
+
+// ── layout: photos or no photos ────────────────────────────────────────────
+// Not every org will have product photos, and the ones that do will build them up gradually. A
+// photo grid whose tiles are mostly letters looks broken, so the layout follows the data:
+//   coverage ≥ MIN_COVERAGE → grid (this page)     below it → list (the live page's layout)
+// An org can pin either one via catalog.catalogLayout ('grid' | 'list' | 'auto'), which is what a
+// per-org column should drive in production. ?layout= overrides everything, for comparing.
+const MIN_COVERAGE = Math.min(1, Math.max(0, parseFloat(Q.get('mincov')) || 0.7));
+const LAYOUT_Q     = (Q.get('layout') || '').toLowerCase();
+
+function imageCoverage() {
+  if (IMG_DEMO || BUCKET_TEST) return 1;
+  const list = (catalog && catalog.skus) || [];
+  if (!list.length) return 0;
+  let withImage = 0;
+  list.forEach(s => { if (s.image) withImage++; });
+  return withImage / list.length;
+}
+function resolveLayout() {
+  if (LAYOUT_Q === 'grid' || LAYOUT_Q === 'list') return LAYOUT_Q;
+  const pinned = catalog && catalog.catalogLayout;
+  if (pinned === 'grid' || pinned === 'list') return pinned;
+  return imageCoverage() >= MIN_COVERAGE ? 'grid' : 'list';
+}
+// Placeholder "photo" (?demo=1): category-tinted gradient + emoji, deterministic per SKU.
+function demoTile(code) {
+  const s = findSku(code);
+  const cat = s && findCat(s.category_id);
+  const col = CAT_COLORS[cat && cat.code] || CAT_COLORS.OTHER;
+  const emoji = CAT_EMOJI[cat && cat.code] || CAT_EMOJI.OTHER;
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">' +
+    '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0" stop-color="' + col.bg + '"/><stop offset="1" stop-color="#ffffff"/>' +
+    '</linearGradient></defs>' +
+    '<rect width="200" height="200" fill="url(#g)"/>' +
+    '<text x="100" y="118" font-size="72" text-anchor="middle">' + emoji + '</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+// A photo that fails to load is simply removed — the tinted initial is already behind it.
+function imgFail(img) { img.remove(); }
+
 // ── State ──
+// Products per page is MEASURED, not fixed: 2 columns × as many rows as the screen actually holds,
+// capped at 10. A fixed count would mean a page taller than the screen on a phone, which brings
+// back vertical scrolling — the thing paging sideways is meant to replace. So the page always fits,
+// and the number of pages varies with the device instead.
+const MAX_PER_PAGE = 10;
+const FORCED_PER   = Math.max(0, parseInt(Q.get('per'), 10) || 0);     // ?per= pins it, for comparing
+const MIN_CARD_H   = Math.max(90, parseInt(Q.get('card'), 10) || 140); // below this a photo stops reading
+const MIN_ROWS     = 2;                                                // never fewer than 4 per page
+const GAP = 8, PAGE_HEAD_H = 26, PAGER_PAD = 10, DOTS_H = 22;          // fixed parts of the layout maths
+const IMG_FIT    = (Q.get('fit') === 'contain') ? 'contain' : 'cover'; // how a photo fills its box
+// Zoom compensates for loosely-framed source photos: the Ariel shots are landscape studio images
+// with the product small and centred in a large white field, so the card crops into the middle.
+// Photos shot to spec — square, tight — want zoom 1. ?zoom= overrides; the dataset sets its own.
+const IMG_ZOOM   = parseFloat(Q.get('zoom')) || null;
+let pageIndex = 0;            // active page in the pager
+let pagerObserver = null;     // IntersectionObserver tracking which page is on screen
+let pagerSig = null;          // tab|category|search of the rendered pager — page index survives a re-render of the same list
+let pageSize = MAX_PER_PAGE;  // products per page as last measured (see computeLayout)
+let hintShown = false;        // the "swipe sideways" nudge is shown once per session
 let catalog = null;
 let qty = {};                 // sku_code -> quantity
 let activeView = 'catalog';
@@ -363,8 +559,50 @@ window.addEventListener('popstate', function () {
   if (entry) entry.back();
 });
 
+// ── offline demo data ──
+// Loaded as a plain <script> rather than fetch() so the demo also works when the file is opened
+// straight off disk (file:// blocks fetch of local files, but not script tags).
+function loadDemoCatalog(name) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'demo/' + encodeURIComponent(name) + '-catalog.js';
+    s.onload  = () => window.DEMO_CATALOG ? resolve(window.DEMO_CATALOG) : reject(new Error('empty dataset'));
+    s.onerror = () => reject(new Error('cannot load ' + s.src));
+    document.head.appendChild(s);
+  });
+}
+
+// Keep a stable, evenly-spread subset of products photographed (same set on every reload).
+function applyDemoCoverage(percent) {
+  const keep = code => {
+    let h = 0;
+    for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) % 1000;
+    return (h % 100) < percent;
+  };
+  (catalog.skus || []).forEach(s => { if (!keep(s.sku_code)) s.image = null; });
+  (catalog.favorites || []).forEach(f => { if (!keep(f.sku_code)) f.image = null; });
+}
+
 // ── boot ──
 async function init() {
+  if (DEMO_ON) {
+    try {
+      catalog = await loadDemoCatalog(DEMO_SET);
+    } catch (e) {
+      console.error(e);
+      fatal('נתוני ההדגמה לא נטענו — הפעילו: node demo-server.js');
+      return;
+    }
+    // ?clarify=1 → start with questions pending, so the demo shows that flow too.
+    if (Q.get('clarify') === '1' && catalog._clarify) {
+      catalog.unmatchedItems   = catalog._clarify.unmatchedItems || [];
+      catalog.allVariantsItems = catalog._clarify.allVariantsItems || [];
+    }
+    // ?coverage=40 → drop the photos from 60% of the catalog, deterministically. Lets the
+    // half-photographed org (the common real case) be looked at, not just imagined.
+    const cov = parseInt(Q.get('coverage'), 10);
+    if (!isNaN(cov)) applyDemoCoverage(Math.min(100, Math.max(0, cov)));
+  } else {
   const token = new URLSearchParams(location.search).get('t');
   if (!token) { fatal('קישור לא תקין — חסר מזהה'); return; }
   try {
@@ -376,6 +614,7 @@ async function init() {
     console.error(e);
     fatal('שגיאה בטעינת הקטלוג. בדוק חיבור או נסה שוב.');
     return;
+  }
   }
 
   unmatchedItems   = [...(catalog.unmatchedItems || [])];
@@ -399,6 +638,15 @@ async function init() {
   if (editMarket && !hasClarify)      activeTab = editMarket;
   else if (hasFavorites)              activeTab = 'favorites';
   else                                activeTab = (catalog.marketTypes[0] || {}).id;
+  // ?tab=favorites | <market code> | <market id> — open a given tab directly (testing convenience).
+  const wantTab = Q.get('tab');
+  if (wantTab) {
+    if (wantTab === 'favorites' && hasFavorites) activeTab = 'favorites';
+    else {
+      const mt = catalog.marketTypes.find(m => String(m.id) === wantTab || m.code === wantTab || m.name === wantTab);
+      if (mt) activeTab = mt.id;
+    }
+  }
 
   document.getElementById('hdr-name').textContent = catalog.org.name || '';
   document.getElementById('hdr-initial').textContent = (catalog.org.name || 'ר')[0];
@@ -472,8 +720,18 @@ function renderCatalog() {
   document.getElementById('cats').classList.toggle('hidden', searching || activeTab === 'favorites' || !activeTab);
   document.getElementById('hero').classList.toggle('hidden', searching || activeTab !== 'favorites' || catalog.existingOrder !== null);
   if (!searching) { renderTabs(); if (activeTab !== 'favorites') renderCats(); renderHero(); }
-  renderPlist();
+  renderProducts();
   updateBars();
+}
+
+// Grid or list, decided by how many products actually have a photo.
+function renderProducts() {
+  const grid = resolveLayout() === 'grid';
+  document.getElementById('pager').classList.toggle('hidden', !grid);
+  document.getElementById('pagedots').classList.toggle('hidden', !grid);
+  document.getElementById('list').classList.toggle('hidden', grid);
+  if (!grid) document.getElementById('swipe-hint').classList.add('hidden');
+  if (grid) renderPager(); else renderList();
 }
 
 function renderClarifyBox() {
@@ -546,13 +804,13 @@ function renderHero() {
   el.classList.remove('hidden');
   el.className = 'hero';
   el.innerHTML =
-    '<div class="hero-kick">ההזמנה הקבועה שלי</div>' +
     '<div class="hero-line">' + catalog.favorites.length + ' מוצרים קבועים לפי ההרגל שלך</div>' +
-    '<button class="hero-btn" onclick="adopt()"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>אמץ כמויות מוצעות</button>';
+    '<button class="hero-btn" onclick="adopt()"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>אמץ כמויות</button>';
 }
 
-function renderPlist() {
-  const el = document.getElementById('plist');
+// Build the display groups for the current tab / category / search — unchanged from the live page.
+// Returns { groups } or { empty: '<message>' }.
+function buildGroups() {
   let groups = [];
 
   if (searchQuery) {
@@ -561,7 +819,7 @@ function renderPlist() {
       (s.name && s.name.toLowerCase().includes(q)) ||
       (s.sku_code && s.sku_code.toLowerCase().includes(q)) ||
       (s.barcode && s.barcode.toLowerCase().includes(q)));
-    if (!m.length) { el.innerHTML = emptyList('לא נמצאו מוצרים'); return; }
+    if (!m.length) return { empty: 'לא נמצאו מוצרים' };
     // Group search results by market type (מדף / מעדניה / …), ordered by the catalog's market order.
     const order = catalog.marketTypes.map(mt => String(mt.id));
     const byMkt = {};
@@ -583,31 +841,234 @@ function renderPlist() {
     const catIds = [...new Set(inMkt.map(s => s.category_id))];
     if (!activeCat || !catIds.includes(activeCat)) activeCat = defaultCatId(catIds);
     const skus = inMkt.filter(s => s.category_id === activeCat);
-    if (!skus.length) { el.innerHTML = emptyList('אין מוצרים בקטגוריה זו'); return; }
+    if (!skus.length) return { empty: 'אין מוצרים בקטגוריה זו' };
     const cat = findCat(activeCat);
     groups = [{ title: cat ? (cat.name || cat.code) : '', meta: marketName(activeTab) + ' · ' + skus.length + ' מוצרים',
       items: skus.map(s => ({ code: s.sku_code, name: s.name })) }];
   }
 
-  el.innerHTML = groups.map(g =>
-    '<div class="group">' +
-      '<div class="group-head"><span class="group-title">' + esc(g.title) + '</span><span class="group-meta">' + esc(g.meta) + '</span></div>' +
-      g.items.map(p => productCard(p.code, p.name, p.suggested)).join('') +
-    '</div>').join('');
+  return { groups };
 }
+
+// ── the pager: groups → pages of 10 (a group never shares a page with another group) ──
+function renderPager() {
+  const pager = document.getElementById('pager');
+  const dots  = document.getElementById('pagedots');
+  const hint  = document.getElementById('swipe-hint');
+  const built = buildGroups();
+
+  if (pagerObserver) { pagerObserver.disconnect(); pagerObserver = null; }
+  // Measure BEFORE chunking — how many products a page holds is a property of the screen.
+  const L = computeLayout();
+  const prevSize = pageSize;
+  pageSize = L.size;
+  applyLayout(L);
+
+  // Coming back from the cart re-renders the catalog — stay on the page the customer was on.
+  // A different tab / category / search is a different catalog → start from the first page.
+  // A rotation changes how many fit, so the old index is rescaled to the new page size.
+  const sig = [activeTab, activeCat, searchQuery].join('|');
+  let restore = (sig === pagerSig) ? pageIndex : 0;
+  if (restore && prevSize !== pageSize) restore = Math.floor(restore * prevSize / pageSize);
+  pagerSig = sig;
+  pageIndex = 0;
+
+  if (built.empty) {
+    pager.innerHTML = '<div class="page active" style="flex:0 0 100%">' + emptyList(built.empty) + '</div>';
+    dots.innerHTML = ''; hint.classList.add('hidden');
+    return;
+  }
+
+  // Chunk each group into pages that fit. A partial page keeps the same grid so the cards never
+  // change size between pages — only the empty slots differ.
+  const pages = [];
+  built.groups.forEach(g => {
+    const total = Math.ceil(g.items.length / pageSize) || 1;
+    for (let i = 0; i < g.items.length; i += pageSize) {
+      pages.push({ title: g.title, items: g.items.slice(i, i + pageSize), part: (i / pageSize) + 1, total });
+    }
+  });
+
+  const start = Math.min(restore, pages.length - 1);
+  pager.innerHTML = pages.map((p, i) =>
+    '<section class="page' + (i === start ? ' active' : '') + '" data-i="' + i + '">' +
+      '<div class="page-head"><span class="page-title">' + esc(p.title) + '</span>' +
+        '<span class="page-meta">' + (p.total > 1 ? p.part + '/' + p.total : p.items.length + ' מוצרים') + '</span></div>' +
+      '<div class="page-grid">' + p.items.map(it => productCard(it.code, it.name, it.suggested)).join('') + '</div>' +
+    '</section>').join('');
+
+  // Up to 10 pages → dots. Beyond that a dot row stops being readable → a compact counter.
+  dots.innerHTML = pages.length <= 1 ? ''
+    : pages.length <= 10
+      ? pages.map((p, i) => '<button class="pdot' + (i === start ? ' on' : '') + '" onclick="goPage(' + i + ')" aria-label="עמוד ' + (i + 1) + '"></button>').join('')
+      : '<span id="page-counter" class="page-meta">' + (start + 1) + ' / ' + pages.length + '</span>';
+
+  // One-time nudge that the catalog continues sideways.
+  hint.classList.toggle('hidden', hintShown || pages.length < 2);
+  if (!hintShown && pages.length > 1) { hintShown = true; setTimeout(() => hint.classList.add('hidden'), 4000); }
+
+  pageIndex = start;
+  hydratePages(start);
+  if (start > 0) goPage(start, 'auto');   // jump (not animate) back to where the customer was
+  observePages();
+}
+
+// Fit one whole page on screen: pager height = what's left between it and the sticky bottom bar.
+// Re-measured on every render and on resize/rotate, so the clarify box, tabs and hero appearing
+// or disappearing never push the last row of products out of view.
+// How much fits, right now. The height between the pager and the send bar decides how many rows
+// a page gets — and therefore how many products are on it. Everything below the pager (the dots
+// row) is a fixed height and the swipe hint is an overlay, so this measurement never chases itself.
+function computeLayout() {
+  const pager = document.getElementById('pager');
+  const top   = pager.getBoundingClientRect().top;
+  const barH  = document.getElementById('catalog-bar').offsetHeight || 76;
+  // Floor = two floor-height rows. Normally there is more room than this and nothing scrolls; when
+  // something temporary sits above the catalog (the clarification box, mainly) the page keeps its
+  // cards readable and lets the DOCUMENT scroll a little instead of crushing them.
+  const floorH = MIN_ROWS * MIN_CARD_H + (MIN_ROWS - 1) * GAP + PAGE_HEAD_H + PAGER_PAD;
+  const pagerH = Math.max(floorH, window.innerHeight - top - DOTS_H - barH - 4);
+  const gridH  = pagerH - PAGER_PAD - PAGE_HEAD_H;
+
+  // Whole cards at the floor size, clamped: at least 2 rows (a page of 2 products would be all
+  // swiping), at most the 10-per-page cap. Between those the screen decides.
+  let rows = Math.floor((gridH + GAP) / (MIN_CARD_H + GAP));
+  rows = Math.min(Math.floor(MAX_PER_PAGE / 2), Math.max(MIN_ROWS, rows));
+  if (FORCED_PER) rows = Math.max(1, Math.ceil(FORCED_PER / 2));
+  // Cards then grow to fill the leftover exactly — no dead strip at the bottom of a page. On a
+  // screen too short even for one floor-height row the card shrinks instead of scrolling: the
+  // page always fits, that is the whole point. ?per= is the exception — it pins a count the screen
+  // may not have room for, so there the card keeps its size and that page scrolls (see .forced).
+  const fill  = Math.floor((gridH - (rows - 1) * GAP) / rows);
+  const cardH = FORCED_PER ? Math.max(MIN_CARD_H, fill) : Math.max(70, fill);
+  return { pagerH, rows, cardH, size: FORCED_PER || rows * 2 };
+}
+
+// Apply the measured heights without re-chunking (resize that didn't change the products per page).
+function applyLayout(L) {
+  const pager = document.getElementById('pager');
+  pager.style.height = L.pagerH + 'px';
+  pager.style.setProperty('--card-h', L.cardH + 'px');
+  pager.style.setProperty('--fit', IMG_FIT);
+  pager.style.setProperty('--zoom', String(IMG_ZOOM || (catalog && catalog.imageZoom) || 1));
+  pager.classList.toggle('forced', !!FORCED_PER);
+}
+
+function observePages() {
+  const pager = document.getElementById('pager');
+  const pages = pager.querySelectorAll('.page');
+  if (!pages.length || !window.IntersectionObserver) return;
+  pagerObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.intersectionRatio >= 0.6) setActivePage(Number(e.target.dataset.i)); });
+  }, { root: pager, threshold: [0, 0.6, 0.95] });
+  pages.forEach(p => pagerObserver.observe(p));
+}
+
+// Fetch the photos for the current page and its immediate neighbours, and nothing else.
+//
+// `loading="lazy"` is NOT enough here. It is a browser heuristic tuned for vertical scrolling; in a
+// horizontal scroller the whole strip can count as "near the viewport", and support in the iOS
+// WebView that WhatsApp opens links in has been unreliable. Measured on the Ariel catalog, leaving
+// it to the browser fetched all 57 photos of a category — 8.3MB — to show four of them.
+// Driving it from the pager's own IntersectionObserver is deterministic and testable instead.
+const PRELOAD_PAGES = 1;    // pages either side of the current one to keep loaded
+function hydratePages(center) {
+  document.querySelectorAll('#pager .page').forEach(p => {
+    if (Math.abs(Number(p.dataset.i) - center) > PRELOAD_PAGES) return;
+    p.querySelectorAll('img[data-src]').forEach(img => {
+      img.src = img.getAttribute('data-src');
+      img.removeAttribute('data-src');
+    });
+  });
+}
+
+function setActivePage(i) {
+  if (i === pageIndex) return;
+  pageIndex = i;
+  hydratePages(i);            // the next page is already warm by the time it is swiped to
+  const pager = document.getElementById('pager');
+  pager.querySelectorAll('.page').forEach(p => p.classList.toggle('active', Number(p.dataset.i) === i));
+  const dots = document.getElementById('pagedots');
+  const counter = document.getElementById('page-counter');
+  if (counter) counter.textContent = (i + 1) + ' / ' + pager.querySelectorAll('.page').length;
+  else dots.querySelectorAll('.pdot').forEach((d, k) => d.classList.toggle('on', k === i));
+  document.getElementById('swipe-hint').classList.add('hidden');
+}
+
+function goPage(i, behavior) {
+  const el = document.querySelector('#pager .page[data-i="' + i + '"]');
+  if (el) el.scrollIntoView({ behavior: behavior || 'smooth', inline: 'start', block: 'nearest' });
+}
+
+// Resize / rotate: if the screen now holds a different number of products, re-chunk; otherwise
+// just re-apply the heights so the cards keep filling the page.
+function relayout() {
+  if (activeView !== 'catalog' || resolveLayout() !== 'grid') return;
+  const L = computeLayout();
+  if (L.size !== pageSize) renderPager();
+  else applyLayout(L);
+}
+let resizeTimer = null;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(relayout, 120); });
+window.addEventListener('orientationchange', () => setTimeout(relayout, 300));
 
 function emptyList(text) {
   return '<div class="empty-list"><div class="empty-list-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg></div><div class="empty-list-text">' + esc(text) + '</div></div>';
 }
 
+// ── LIST layout ──
+// The live page's vertical list, plus a thumbnail for the products that do have a photo. This is
+// what an org with no photos (or a handful) gets, and what every org gets on day one.
+function renderList() {
+  const el = document.getElementById('list');
+  const built = buildGroups();
+  if (built.empty) { el.innerHTML = emptyList(built.empty); return; }
+  el.style.setProperty('--zoom', String(IMG_ZOOM || (catalog && catalog.imageZoom) || 1));
+  el.innerHTML = built.groups.map(g =>
+    '<div class="group">' +
+      '<div class="group-head"><span class="group-title">' + esc(g.title) + '</span>' +
+        '<span class="group-meta">' + esc(g.meta) + '</span></div>' +
+      g.items.map(p => listCard(p.code, p.name, p.suggested)).join('') +
+    '</div>').join('');
+}
+
+function listCard(code, name, suggested) {
+  const col = catColorForCode(code);
+  const initial = (name || '?').trim()[0] || '·';
+  const q = qty[code] || 0;
+  const tag = (suggested && !q) ? '<span class="ltag">מוצע ' + suggested + '</span>' : '';
+  // The list scrolls vertically, which is what loading="lazy" is actually good at — but the same
+  // initial-underneath structure keeps a slow or missing thumbnail from looking broken.
+  const thumb = '<div class="lthumb" style="background:' + col.bg + ';color:' + col.fg + '">' +
+    '<span class="pinitial" style="font-size:20px">' + esc(initial) + '</span>' +
+    (hasImage(code)
+      ? '<img src="' + esc(imageUrl(code)) + '" alt="" loading="lazy" decoding="async" ' +
+        'onload="this.classList.add(\'on\')" onerror="this.remove()">'
+      : '') + '</div>';
+  return '<div class="prod lcard' + (q > 0 ? ' has-qty' : '') + '" data-code="' + esc(code) + '">' + thumb +
+    '<div class="linfo"><div class="lname">' + esc(name) + '</div>' +
+      '<div class="lmeta"><span class="lsku">' + esc(displayCode(code)) + '</span>' + tag + '</div></div>' +
+    '<div class="pcard-action">' + cardAction(code) + '</div></div>';
+}
+
 function productCard(code, name, suggested) {
   const col = catColorForCode(code);
   const initial = (name || '?').trim()[0] || '·';
-  const tag = (suggested && !(qty[code] > 0)) ? '<span class="ptag">מוצע ' + suggested + '</span>' : '';
-  return '<div class="pcard' + (qty[code] > 0 ? ' has-qty' : '') + '" data-code="' + esc(code) + '">' +
-    '<div class="pavatar" style="background:' + col.bg + ';color:' + col.fg + '">' + esc(initial) + '</div>' +
-    '<div class="pinfo"><div class="pname">' + esc(name) + '</div>' +
-      '<div class="pmeta"><span class="psku">' + esc(displayCode(code)) + '</span>' + tag + '</div></div>' +
+  const q = qty[code] || 0;
+  const tag = (suggested && !q) ? '<span class="ptag">מוצע ' + suggested + '</span>' : '';
+  const badge = q > 0 ? '<span class="pqty-badge">' + q + '</span>' : '';
+  // The photo carries data-src, NOT src — hydratePages() decides when it is fetched (see there).
+  // The tinted initial underneath covers "no photo", "not loaded yet" and "failed" alike.
+  const img = hasImage(code)
+    ? '<img data-src="' + esc(imageUrl(code)) + '" alt="' + esc(name) + '" decoding="async" ' +
+      'onload="this.classList.add(\'on\')" onerror="this.remove()">'
+    : '';
+  return '<div class="prod pcard' + (q > 0 ? ' has-qty' : '') + '" data-code="' + esc(code) + '">' +
+    '<div class="pthumb" style="background:' + col.bg + '">' +
+      '<span class="pinitial" style="color:' + col.fg + '">' + esc(initial) + '</span>' +
+      img + badge + tag + '<span class="pcode">' + esc(displayCode(code)) + '</span>' +
+    '</div>' +
+    '<div class="pname">' + esc(name) + '</div>' +
     '<div class="pcard-action">' + cardAction(code) + '</div></div>';
 }
 
@@ -622,16 +1083,26 @@ function cardAction(code) {
     '<button class="qbtn plus" onclick="inc(\'' + js(code) + '\')" aria-label="הוסף">+</button></div>';
 }
 
-// Update one catalog card's action + highlight in place (no list re-render → no flicker / focus loss).
+// Update one catalog card's action, badge + highlight in place (no re-render → no flicker, and the
+// pager keeps its scroll position on the page the customer is looking at).
 function refreshCard(code) {
-  const card = document.querySelector('#plist .pcard[data-code="' + (window.CSS && CSS.escape ? CSS.escape(code) : code) + '"]');
+  const card = document.querySelector('#plist .prod[data-code="' + (window.CSS && CSS.escape ? CSS.escape(code) : code) + '"]');
   if (!card) return;
-  card.classList.toggle('has-qty', (qty[code] || 0) > 0);
+  const q = qty[code] || 0;
+  card.classList.toggle('has-qty', q > 0);
   const act = card.querySelector('.pcard-action');
   if (act) act.innerHTML = cardAction(code);
-  // A favourite card's "מוצע" tag disappears once it has a quantity.
-  const meta = card.querySelector('.pmeta .ptag');
-  if (meta && qty[code] > 0) meta.remove();
+  // Quantity badge over the photo (grid only — in the list the stepper already shows the number).
+  const thumb = card.querySelector('.pthumb');
+  let badge = card.querySelector('.pqty-badge');
+  if (q > 0) {
+    if (!badge && thumb) { badge = document.createElement('span'); badge.className = 'pqty-badge'; thumb.appendChild(badge); }
+    if (badge) badge.textContent = q;
+    const tag = card.querySelector('.ptag, .ltag');   // a favourite's "מוצע" tag goes once it has a quantity
+    if (tag) tag.remove();
+  } else if (badge) {
+    badge.remove();
+  }
 }
 
 function updateBars() {
@@ -697,8 +1168,8 @@ function addSuggested(code, q) { setQty(code, q); refreshCard(code); updateBars(
 
 // ── fastest path: adopt the suggested quantities (stay on the page; no jump to cart) ──
 function adopt() {
-  (catalog.favorites || []).forEach(f => { setQty(f.sku_code, f.suggested_qty); });
-  renderPlist();
+  // Update the cards in place rather than re-rendering: the pager keeps the page the customer is on.
+  (catalog.favorites || []).forEach(f => { setQty(f.sku_code, f.suggested_qty); refreshCard(f.sku_code); });
   updateBars();
   toast('אומצו הכמויות המוצעות');
 }
@@ -976,6 +1447,10 @@ async function sendOrder() {
   const items = entries.map(([sku_code, quantity]) => ({ sku_code, quantity })); // [] when cancelling
 
   showPosting(isCancel ? 'מבטל את ההזמנה...' : 'שולח את ההזמנה...');
+
+  // Offline demo: nothing leaves the browser. Show the same posting overlay, then a success
+  // screen instead of the wa.me hand-off.
+  if (DEMO_ON) { setTimeout(() => demoSuccess(items), 900); return; }
   const token = new URLSearchParams(location.search).get('t');
   if (!pendingRequestId) {
     pendingRequestId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random();
@@ -1014,6 +1489,25 @@ async function sendOrder() {
   );
   const phone = (catalog.distributorPhone || '').replace(/\D/g, '');
   window.location.href = 'https://wa.me/' + phone;
+}
+
+// Demo-only end screen — stands in for the WhatsApp hand-off the live page does.
+function demoSuccess(items) {
+  hidePosting();
+  const units = items.reduce((a, it) => a + it.quantity, 0);
+  const list = items.map(it => '<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--line)">' +
+      '<span style="font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(findSku(it.sku_code).name) + '</span>' +
+      '<span style="font-weight:800;flex:none">× ' + it.quantity + '</span></div>').join('');
+  const app = document.getElementById('app');
+  app.innerHTML =
+    '<div class="success">' +
+      '<div class="success-ico"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>' +
+      '<div class="success-title">' + (items.length ? 'ההזמנה נשלחה' : 'ההזמנה בוטלה') + '</div>' +
+      '<div class="success-sum">' + (items.length ? items.length + ' פריטים · ' + units + ' יחידות' : '') + '</div>' +
+      (items.length ? '<div class="success-note" style="text-align:start;max-height:40vh;overflow:auto">' + list + '</div>' : '') +
+      '<div class="success-note" style="background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber-ink)">מצב הדגמה — לא נשלח דבר לשרת</div>' +
+      '<button class="new-btn" onclick="location.reload()">הזמנה חדשה</button>' +
+    '</div>';
 }
 
 // ── toast / overlays ──

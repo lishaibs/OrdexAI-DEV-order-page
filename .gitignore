@@ -2,3 +2,8 @@
 node_modules/
 *.log
 .vscode/
+
+# demo tooling + third-party demo data live in the PRIVATE backend repo
+# (tools/order-page-demo/) — this repo is public and is the deploy target
+order/demo/
+order/demo-server.js
