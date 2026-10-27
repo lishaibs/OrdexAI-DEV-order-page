@@ -181,6 +181,12 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .lname{font-size:14px;font-weight:600;line-height:1.3;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .lmeta{display:flex;align-items:center;gap:8px;margin-top:3px}
 .lsku{font-size:11px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace}
+/* base-unit total under the ordered quantity ("16 יחידות סה\"כ") — only for SKUs with a conversion */
+.lconv,.crow-conv,.kp-conv{font-size:11.5px;font-weight:700;color:var(--wa-deep)}
+.pconv{position:absolute;top:4px;inset-inline-start:4px;max-width:calc(100% - 40px);font-size:10px;font-weight:800;color:var(--wa-deep);
+  background:var(--wa-soft);padding:2px 7px;border-radius:999px;border:1px solid var(--wa-line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow-conv{margin-top:2px}
+.kp-conv{text-align:center;margin:-4px 0 8px;min-height:16px}
 .ltag{font-size:10.5px;font-weight:800;color:var(--amber-ink);background:var(--amber-bg);padding:2px 8px;border-radius:999px;border:1px solid var(--amber-line)}
 /* the list has room for the live page's full-size controls */
 .lcard .pcard-action{flex:none}
@@ -707,6 +713,18 @@ function marketName(id) {
 // prefill-pending token, so this stays in lock-step with the backend cancel paths.
 function isEditOrder() { return !!(catalog && (catalog.sessionId || catalog.existingOrder)); }
 function isEditExpired() { return editUntilEpoch != null && (Date.now() / 1000) > editUntilEpoch; }
+// Units: the quantity is always counted in the SALES unit (e.g. cartons). When the catalog carries a
+// conversion (base_unit + base_units_per_unit), show the base-unit total under it: 2 cartons × 8 →
+// "16 יחידות סה"כ". No conversion on the SKU → '' and nothing is rendered.
+const UNIT_PLURAL = { 'יחידה': 'יחידות', 'קרטון': 'קרטונים', 'מארז': 'מארזים', 'אריזה': 'אריזות', 'שקית': 'שקיות',
+  'תבנית': 'תבניות', 'דלי': 'דליים', 'ארגז': 'ארגזים', 'מגש': 'מגשים', 'פרוסה': 'פרוסות' };
+function convText(code, q) {
+  const s = catalog && catalog.skus && catalog.skus.find(x => x.sku_code === code);
+  const f = s && Number(s.base_units_per_unit);
+  if (!(q > 0) || !s || !s.base_unit || !(f > 0)) return '';
+  const n = Math.round(q * f * 1000) / 1000;
+  return n.toLocaleString('he-IL') + ' ' + (n === 1 ? s.base_unit : (UNIT_PLURAL[s.base_unit] || s.base_unit)) + ' סה"כ';
+}
 function units() { return Object.values(qty).reduce((a, b) => a + b, 0); }
 function lines() { return Object.entries(qty).filter(([, q]) => q > 0); }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1114,7 +1132,8 @@ function listCard(code, name, suggested) {
       : '') + '</div>';
   return '<div class="prod lcard' + (q > 0 ? ' has-qty' : '') + '" data-code="' + esc(code) + '">' + thumb +
     '<div class="linfo"><div class="lname">' + esc(name) + '</div>' +
-      '<div class="lmeta"><span class="lsku">' + esc(displayCode(code)) + '</span>' + tag + '</div></div>' +
+      '<div class="lmeta"><span class="lsku">' + esc(displayCode(code)) + '</span>' + tag +
+        '<span class="lconv">' + esc(convText(code, q)) + '</span></div></div>' +
     '<div class="pcard-action">' + cardAction(code) + '</div></div>';
 }
 
@@ -1124,6 +1143,8 @@ function productCard(code, name, suggested) {
   const q = qty[code] || 0;
   const tag = suggested ? '<span class="ptag' + (q ? ' hidden' : '') + '">מוצע ' + suggested + '</span>' : '';
   const badge = q > 0 ? '<span class="pqty-badge">' + q + '</span>' : '';
+  const conv = convText(code, q);
+  const convChip = conv ? '<span class="pconv">' + esc(conv) + '</span>' : '';
   // The photo carries data-src, NOT src — hydratePages() decides when it is fetched (see there).
   // The tinted initial underneath covers "no photo", "not loaded yet" and "failed" alike.
   const img = hasImage(code)
@@ -1133,7 +1154,7 @@ function productCard(code, name, suggested) {
   return '<div class="prod pcard' + (q > 0 ? ' has-qty' : '') + '" data-code="' + esc(code) + '">' +
     '<div class="pthumb" style="background:' + col.bg + '">' +
       '<span class="pinitial" style="color:' + col.fg + '">' + esc(initial) + '</span>' +
-      img + badge + tag + '<span class="pcode">' + esc(displayCode(code)) + '</span>' +
+      img + badge + tag + convChip + '<span class="pcode">' + esc(displayCode(code)) + '</span>' +
     '</div>' +
     '<div class="pname">' + esc(name) + '</div>' +
     '<div class="pcard-action">' + cardAction(code) + '</div></div>';
@@ -1172,6 +1193,17 @@ function refreshCard(code) {
   // "אפס כמויות" the customer needs to see what adopting again would put in the cart.
   const tag = card.querySelector('.ptag, .ltag');
   if (tag) tag.classList.toggle('hidden', q > 0);
+  // Base-unit total: list → text in the meta row; grid → chip on the photo (where the hidden tag sits).
+  const conv = convText(code, q);
+  const lconv = card.querySelector('.lconv');
+  if (lconv) lconv.textContent = conv;
+  let pconv = card.querySelector('.pconv');
+  if (conv && thumb) {
+    if (!pconv) { pconv = document.createElement('span'); pconv.className = 'pconv'; thumb.appendChild(pconv); }
+    pconv.textContent = conv;
+  } else if (pconv) {
+    pconv.remove();
+  }
 }
 
 function updateBars() {
@@ -1305,6 +1337,8 @@ function paintKeypadValue() {
   if (!el) return;
   el.textContent = keypadBuf || '0';
   el.classList.toggle('fresh', keypadFresh);
+  const conv = document.getElementById('kp-conv');
+  if (conv && keypad) conv.textContent = convText(keypad.code, Number(keypadBuf) || 0);
 }
 function keyConfirm() {
   const code = keypad.code;
@@ -1332,6 +1366,7 @@ function renderKeypad() {
       '<div class="sheet-handle"></div>' +
       '<div class="keypad-name">' + esc(findSku(keypad.code).name) + '</div>' +
       '<div class="keypad-val' + (keypadFresh ? ' fresh' : '') + '" id="kp-val">' + (keypadBuf || '0') + '</div>' +
+      '<div class="kp-conv" id="kp-conv">' + esc(convText(keypad.code, Number(keypadBuf) || 0)) + '</div>' +
       '<div class="keypad-presets">' + presets + '</div>' +
       '<div class="keypad-grid">' + grid + '</div>' +
       '<button class="keypad-confirm" onclick="keyConfirm()">אישור</button>' +
@@ -1362,7 +1397,9 @@ function renderCart() {
   const u = items.reduce((a, [, q]) => a + q, 0);
   sum.textContent = pending.length
     ? ('יש לאשר כמות ל־' + pending.length + ' פריטים לפני שליחה')
-    : (items.length + ' פריטים · ' + u + ' יחידות');
+    // A raw sum of sales units ("9 יחידות") is meaningless once lines carry their own unit conversion
+    // (2 cartons + 3 trays) and contradicts the per-line "16 יחידות סה"כ" — then show the line count only.
+    : (items.some(([c, q]) => convText(c, q)) ? items.length + ' פריטים' : items.length + ' פריטים · ' + u + ' יחידות');
 
   // Confirmed lines (qty>0) + needs_qty lines still at 0 (rendered highlighted), grouped by market.
   const byMkt = {};
@@ -1378,7 +1415,8 @@ function renderCart() {
     rows.map(r =>
       '<div class="crow' + (r.needs ? ' needs-qty' : '') + '"' + (r.needs ? ' style="border-inline-start:3px solid var(--amber);background:var(--amber-soft)"' : '') + '><div class="crow-info"><div class="crow-name">' + esc(r.name) +
         (r.needs ? ' <span style="color:var(--amber-ink);font-size:11.5px;font-weight:700">· אשר כמות</span>' : '') + '</div>' +
-        '<div class="crow-sku">' + esc(displayCode(r.code)) + '</div></div>' +
+        '<div class="crow-sku">' + esc(displayCode(r.code)) + '</div>' +
+        (convText(r.code, r.q) ? '<div class="crow-conv">' + esc(convText(r.code, r.q)) + '</div>' : '') + '</div>' +
         '<div class="crow-ctrls">' +
           '<button class="qbtn minus" onclick="dec(\'' + js(r.code) + '\')" aria-label="הפחת">−</button>' +
           '<button class="qnum" onclick="openKeypad(\'' + js(r.code) + '\')">' + r.q + '</button>' +
