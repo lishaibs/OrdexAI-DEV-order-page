@@ -156,6 +156,39 @@ input[type=search]::-webkit-search-cancel-button{display:none}
 .add-btn{width:100%;height:32px;flex:none;background:var(--wa-soft);color:var(--wa-deep);border:1.5px solid var(--wa-line);
   border-radius:10px;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:5px}
 .add-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.6}
+/* ── product families (catalog.families / catalog.attributes): one card per family, the variant is
+   picked in a sheet. An org without families never renders any of this. ── */
+.pswatches{position:absolute;bottom:3px;inset-inline-end:4px;display:flex;gap:3px;align-items:center;max-width:78%;
+  overflow:hidden;background:rgba(255,255,255,.86);padding:2px 5px;border-radius:999px}
+.swatch{width:10px;height:10px;border-radius:50%;border:1px solid rgba(13,31,24,.22);flex:none;display:inline-block}
+.swatch.clear{background:repeating-linear-gradient(45deg,#fff 0 2px,#c7dbd0 2px 3px)}
+.pvar-txt{font-size:9.5px;font-weight:700;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvars{display:inline-flex;gap:4px;align-items:center;min-width:0}
+.attr-filter{display:flex;gap:6px;overflow-x:auto;padding:6px 14px 0;align-items:center}
+.attr-filter-label{flex:none;font-size:12px;font-weight:700;color:var(--ink-3)}
+.attr-filter .pill{padding:6px 12px;font-size:12.5px;display:inline-flex;align-items:center;gap:6px}
+.vs-head{display:flex;gap:12px;align-items:center;margin-top:4px}
+.vs-thumb{width:64px;height:64px;border-radius:12px;flex:none;position:relative;overflow:hidden;display:grid;place-items:center}
+.vs-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .18s ease}
+.vs-thumb img.on{opacity:1}
+.vs-title{font-size:16px;font-weight:800;line-height:1.25}
+.vs-desc{font-size:12.5px;color:var(--ink-3);margin-top:2px;line-height:1.35}
+.vs-axis{margin-top:14px}
+.vs-axis-label{font-size:12.5px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+.vs-chips{display:flex;flex-wrap:wrap;gap:7px}
+.vs-chip{padding:8px 14px;border-radius:11px;font-size:14px;font-weight:700;border:1.5px solid var(--line-2);background:#fff;
+  color:var(--ink);display:inline-flex;align-items:center;gap:7px}
+.vs-chip.on{border-color:var(--wa);background:var(--wa-soft)}
+.vs-chip-q{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--wa);color:var(--wa-ink);font-size:10.5px;
+  font-weight:800;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.vs-pick{margin-top:14px;background:var(--app);border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.vs-pick-info{flex:1;min-width:0}
+.vs-pick-name{font-size:13.5px;font-weight:700;line-height:1.3}
+.vs-pick-meta{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.vs-pick .stepper{flex:none}
+.vs-pick .qbtn{width:40px;height:40px;border-radius:11px;font-size:20px}
+.vs-pick .qnum{flex:none;min-width:40px;height:40px;font-size:16px}
+.vs-pick .add-btn{width:auto;height:40px;padding:0 16px;font-size:14px}
 .stepper{display:flex;align-items:center;gap:4px;flex:none}
 .qbtn{width:32px;height:32px;flex:none;border-radius:10px;display:grid;place-items:center;font-size:19px;font-weight:500}
 .qbtn.minus{border:1.5px solid var(--line-2);background:#fff;color:var(--ink-2)}
@@ -355,6 +388,7 @@ input[type=search]::-webkit-search-cancel-button{display:none}
       </div>
       <div id="tabs" class="tabs"></div>
       <div id="cats" class="cats hidden"></div>
+      <div id="attr-filter" class="attr-filter hidden"></div>
       <div id="hero" class="hidden"></div>
       <div id="plist" style="position:relative">
         <!-- grid layout (photos) -->
@@ -384,6 +418,7 @@ input[type=search]::-webkit-search-cancel-button{display:none}
   </div>
 
   <!-- sheets + toast live outside the views so they overlay everything -->
+  <div id="variant" class="hidden"></div>
   <div id="keypad" class="hidden"></div>
   <div id="clarify" class="hidden"></div>
   <div id="confirm" class="hidden"></div>
@@ -541,6 +576,10 @@ let resolvedAliases = [];     // raw customer text -> chosen sku (learned as con
 let droppedUnmatched = [];    // raw texts the customer marked "not in the list"
 let editUntilEpoch = null;    // edit deadline (unix seconds); null for new orders
 let keypad = null;            // { code } while the numeric sheet is open
+let famIndex = {};            // family code -> { fam, members:[sku] } — only families the server grouped
+let attrIndex = {};           // attribute code -> { def, opt:{ option code -> option }, swatches:bool }
+let attrFilter = null;        // { attr, value } — the active attribute filter pill, or null
+let variantSheet = null;      // { fam, codes:[sku_code], code } while the variant sheet is open
 let keypadBuf = '';
 let keypadFresh = true;       // the keypad opens in overwrite mode: the first digit replaces the qty
 let adoptedSnapshot = null;   // qty before "adopt" ran — non-null means the hero button shows "reset"
@@ -559,7 +598,7 @@ let toastTimer = null, deadlineTimer = null;
 // entry with a guard flag so popstate is a no-op for them.
 const overlayStack = [];       // entries: { back: fn }  (back = hardware-Back behavior)
 let overlayUnwinding = false;  // true while WE call history.back() ourselves
-let clarifyEntry = null, keypadEntry = null, confirmEntry = null;
+let clarifyEntry = null, keypadEntry = null, confirmEntry = null, variantEntry = null;
 
 function openOverlay(entry) {
   overlayStack.push(entry);
@@ -636,6 +675,7 @@ async function init() {
   }
   }
 
+  indexFamilies();
   unmatchedItems   = [...(catalog.unmatchedItems || [])];
   allVariantsItems = [...(catalog.allVariantsItems || [])];
   editUntilEpoch   = catalog.editUntilEpoch || null;
@@ -751,6 +791,7 @@ function renderCatalog() {
   document.getElementById('cats').classList.toggle('hidden', searching || activeTab === 'favorites' || !activeTab);
   document.getElementById('hero').classList.toggle('hidden', searching || activeTab !== 'favorites' || catalog.existingOrder !== null);
   if (!searching) { renderTabs(); if (activeTab !== 'favorites') renderCats(); renderHero(); }
+  renderAttrFilter();
   renderProducts();
   updateBars();
 }
@@ -856,7 +897,8 @@ function buildGroups() {
     const m = catalog.skus.filter(s =>
       (s.name && s.name.toLowerCase().includes(q)) ||
       (s.sku_code && s.sku_code.toLowerCase().includes(q)) ||
-      (s.barcode && s.barcode.toLowerCase().includes(q)));
+      (s.barcode && s.barcode.toLowerCase().includes(q)) ||
+      (s.family && famIndex[s.family] && String(famIndex[s.family].fam.name || '').toLowerCase().includes(q)));
     if (!m.length) return { empty: 'לא נמצאו מוצרים' };
     // Group search results by market type (מדף / מעדניה / …), ordered by the catalog's market order.
     const order = catalog.marketTypes.map(mt => String(mt.id));
@@ -864,8 +906,10 @@ function buildGroups() {
     m.forEach(s => { const k = s.market_type_id != null ? String(s.market_type_id) : '__none__'; (byMkt[k] = byMkt[k] || []).push(s); });
     groups = Object.keys(byMkt)
       .sort((a, b) => (order.indexOf(a) < 0 ? 999 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 999 : order.indexOf(b)))
-      .map(k => ({ title: k === '__none__' ? 'אחר' : (marketName(k) || 'אחר'), meta: byMkt[k].length + ' מוצרים',
-        items: byMkt[k].map(s => ({ code: s.sku_code, name: s.name })) }));
+      .map(k => {
+        const items = collapseFamilies(byMkt[k].map(s => ({ code: s.sku_code, name: s.name })));
+        return { title: k === '__none__' ? 'אחר' : (marketName(k) || 'אחר'), meta: items.length + ' מוצרים', items };
+      });
   } else if (activeTab === 'favorites') {
     const showTag = catalog.existingOrder === null;   // suggested-qty tags only for new orders
     const byMkt = {};
@@ -878,11 +922,11 @@ function buildGroups() {
     const inMkt = catalog.skus.filter(s => s.market_type_id === activeTab);
     const catIds = [...new Set(inMkt.map(s => s.category_id))];
     if (!activeCat || !catIds.includes(activeCat)) activeCat = defaultCatId(catIds);
-    const skus = inMkt.filter(s => s.category_id === activeCat);
+    const skus = inMkt.filter(s => s.category_id === activeCat && matchesAttrFilter(s));
     if (!skus.length) return { empty: 'אין מוצרים בקטגוריה זו' };
     const cat = findCat(activeCat);
-    groups = [{ title: cat ? (cat.name || cat.code) : '', meta: marketName(activeTab) + ' · ' + skus.length + ' מוצרים',
-      items: skus.map(s => ({ code: s.sku_code, name: s.name })) }];
+    const items = collapseFamilies(skus.map(s => ({ code: s.sku_code, name: s.name })));
+    groups = [{ title: cat ? (cat.name || cat.code) : '', meta: marketName(activeTab) + ' · ' + items.length + ' מוצרים', items }];
   }
 
   return { groups };
@@ -906,7 +950,7 @@ function renderPager() {
   // A different tab / category / search is a different list, so it resumes at ITS OWN remembered
   // page (first visit → page 1), not at the page index the previous category happened to be on.
   // A rotation changes how many fit, so the old index is rescaled to the new page size.
-  const sig = [activeTab, activeCat, searchQuery].join('|');
+  const sig = [activeTab, activeCat, searchQuery, attrFilter ? attrFilter.attr + '=' + attrFilter.value : ''].join('|');
   let restore = (sig === pagerSig) ? pageIndex : (pageMemory[sig] || 0);
   if (restore && prevSize !== pageSize) restore = Math.floor(restore * prevSize / pageSize);
   pagerSig = sig;
@@ -933,7 +977,7 @@ function renderPager() {
     '<section class="page' + (i === start ? ' active' : '') + '" data-i="' + i + '" data-g="' + p.group + '">' +
       '<div class="page-head"><span class="page-title">' + esc(p.title) + '</span>' +
         '<span class="page-meta">' + (p.total > 1 ? p.part + '/' + p.total : p.items.length + ' מוצרים') + '</span></div>' +
-      '<div class="page-grid">' + p.items.map(it => productCard(it.code, it.name, it.suggested)).join('') + '</div>' +
+      '<div class="page-grid">' + p.items.map(it => it.family ? familyCard(it) : productCard(it.code, it.name, it.suggested)).join('') + '</div>' +
     '</section>').join('');
 
   // Up to 10 pages → dots. Beyond that a dot row stops being readable → a compact counter.
@@ -1111,7 +1155,7 @@ function renderList() {
     '<div class="group">' +
       '<div class="group-head"><span class="group-title">' + esc(g.title) + '</span>' +
         '<span class="group-meta">' + esc(g.meta) + '</span></div>' +
-      g.items.map(p => listCard(p.code, p.name, p.suggested)).join('') +
+      g.items.map(p => p.family ? familyListCard(p) : listCard(p.code, p.name, p.suggested)).join('') +
     '</div>').join('');
 }
 
@@ -1174,6 +1218,8 @@ function cardAction(code) {
 // Update one catalog card's action, badge + highlight in place (no re-render → no flicker, and the
 // pager keeps its scroll position on the page the customer is looking at).
 function refreshCard(code) {
+  const fam = famOf(code);
+  if (fam) refreshFamilyCards(fam.fam.code);
   const card = document.querySelector('#plist .prod[data-code="' + (window.CSS && CSS.escape ? CSS.escape(code) : code) + '"]');
   if (!card) return;
   const q = qty[code] || 0;
@@ -1243,7 +1289,9 @@ function applyQtyChange(code, opts) {
   }
   if (activeView === 'cart') renderCart();
   else renderClarifyBox();   // catalog view: keep the inline "אשר כמות" clarify rows in sync as qty changes
-  if (opts && opts.toast) toast(opts.toast);
+  if (variantSheet) renderVariant();
+  // Inside the variant sheet the chip counter + stepper already show the change; a toast would cover them.
+  if (opts && opts.toast && !variantSheet) toast(opts.toast);
 }
 function add(code) { setQty(code, (qty[code] || 0) + 1); applyQtyChange(code, { toast: findSku(code).name + ' נוסף לסל' }); }
 function inc(code) { const n = (qty[code] || 0) + 1; setQty(code, n); applyQtyChange(code, { toast: findSku(code).name + ' × ' + n }); }
@@ -1304,10 +1352,10 @@ function clearSearch() {
 }
 function switchTab(id) {
   clearSearch();
-  activeTab = id; activeCat = null;
+  activeTab = id; activeCat = null; attrFilter = null;
   renderCatalog();
 }
-function switchCat(id) { activeCat = id; renderCatalog(); }
+function switchCat(id) { activeCat = id; attrFilter = null; renderCatalog(); }
 
 // ── keypad sheet ──
 function openKeypad(code) { keypad = { code }; keypadBuf = String(qty[code] || ''); keypadFresh = true; keypadEntry = { back: rawCloseKeypad }; openOverlay(keypadEntry); renderKeypad(); }
@@ -1347,6 +1395,7 @@ function keyConfirm() {
   // needs_qty via keypad = an explicit confirm → clear it immediately (no debounce wait).
   if (needsQty.has(code) && (qty[code] || 0) > 0) { clearTimeout(needsQtyTimers[code]); needsQty.delete(code); delete needsQtyTimers[code]; }
   refreshCard(code); updateBars();
+  if (variantSheet) renderVariant();
   if (activeView === 'cart') renderCart(); else renderClarifyBox();
 }
 function keypadBackdrop(e) { if (e.target === e.currentTarget) closeKeypad(); }
@@ -1372,6 +1421,242 @@ function renderKeypad() {
       '<button class="keypad-confirm" onclick="keyConfirm()">אישור</button>' +
     '</div>';
   el.setAttribute('onclick', 'keypadBackdrop(event)');
+}
+
+// ══════════════════ FAMILIES ══════════════════
+// SKUs that are the same product in different colours / sizes arrive with `family` (+ `attrs`), and
+// catalog.families / catalog.attributes describe them (migration 20261109_sku_families_attributes.sql).
+// The catalog shows ONE card per family; the customer picks the variant in a sheet. The cart, the
+// quantities and the order stay per SKU — this is display only. The server only marks a SKU with
+// `family` when its family can be told apart cleanly, so any data problem degrades to one card per SKU.
+function indexFamilies() {
+  famIndex = {}; attrIndex = {};
+  (catalog.attributes || []).forEach(a => {
+    const opts = a.options || [];
+    attrIndex[a.code] = { def: a, opt: Object.fromEntries(opts.map(o => [o.code, o])), swatches: opts.some(o => o.swatch) };
+  });
+  (catalog.families || []).forEach(f => { famIndex[f.code] = { fam: f, members: [] }; });
+  (catalog.skus || []).forEach(s => { if (s.family && famIndex[s.family]) famIndex[s.family].members.push(s); });
+  Object.keys(famIndex).forEach(k => { if (famIndex[k].members.length < 2) delete famIndex[k]; });
+}
+function famOf(code) {
+  const s = (catalog.skus || []).find(x => x.sku_code === code);
+  return s && s.family && famIndex[s.family] ? famIndex[s.family] : null;
+}
+// One card per family, at the position of its first member in the list; only members IN this list
+// (this category / market / search / filter) are offered in its sheet.
+function collapseFamilies(items) {
+  if (!Object.keys(famIndex).length) return items;
+  const out = [], byFam = {};
+  items.forEach(it => {
+    const f = famOf(it.code);
+    if (!f) { out.push(it); return; }
+    const key = f.fam.code;
+    if (byFam[key]) { byFam[key].codes.push(it.code); return; }
+    byFam[key] = { code: it.code, name: f.fam.name, family: key, codes: [it.code] };
+    out.push(byFam[key]);
+  });
+  // A family with a single member left in this list is just that product.
+  return out.map(it => (it.family && it.codes.length < 2) ? { code: it.code, name: findSku(it.code).name } : it);
+}
+function matchesAttrFilter(s) {
+  return !attrFilter || (s.attrs && s.attrs[attrFilter.attr] === attrFilter.value);
+}
+// The attributes that tell these SKUs apart, in the attribute order the server sent.
+function varyingAxes(members) {
+  return (catalog.attributes || []).map(a => a.code).filter(code =>
+    new Set(members.map(m => m.attrs && m.attrs[code]).filter(Boolean)).size >= 2);
+}
+function swatchHtml(attr, optCode) {
+  const a = attrIndex[attr];
+  if (!a || !a.swatches) return '';
+  const o = a.opt[optCode];
+  return o && o.swatch ? '<span class="swatch" style="background:' + esc(o.swatch) + '"></span>' : '<span class="swatch clear"></span>';
+}
+function optLabel(attr, optCode) {
+  const a = attrIndex[attr];
+  return (a && a.opt[optCode] && a.opt[optCode].label) || optCode;
+}
+// What the card shows about its variants: colour dots, or the values as text (e.g. 300 מ"ל · 600 מ"ל).
+function familyVariantsHtml(members) {
+  return varyingAxes(members).filter(code => attrIndex[code] && attrIndex[code].def.show_on_card).map(code => {
+    const vals = attrIndex[code].def.options.map(o => o.code).filter(v => members.some(m => m.attrs && m.attrs[code] === v));
+    if (attrIndex[code].swatches) return vals.slice(0, 6).map(v => swatchHtml(code, v)).join('') + (vals.length > 6 ? '<span class="pvar-txt">+' + (vals.length - 6) + '</span>' : '');
+    return '<span class="pvar-txt">' + vals.map(v => esc(optLabel(code, v))).join(' · ') + '</span>';
+  }).join('');
+}
+function famTotal(codes) { return codes.reduce((a, c) => a + (qty[c] || 0), 0); }
+function famAction(it) {
+  const total = famTotal(it.codes);
+  const axes = varyingAxes(it.codes.map(findSku));
+  const what = axes.length === 1 && attrIndex[axes[0]] ? attrIndex[axes[0]].def.label : 'סוג';
+  return '<button class="add-btn" onclick="openVariant(\'' + js(it.family) + '\',\'' + js(it.codes.join('|')) + '\')">' +
+    (total > 0 ? 'בסל ' + total + ' · שינוי'
+               : '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>בחר ' + esc(what)) + '</button>';
+}
+// The photo shown for a family: a member already in the cart, else the first with a photo.
+function famPhotoCode(codes) {
+  return codes.find(c => (qty[c] || 0) > 0 && hasImage(c)) || codes.find(c => hasImage(c)) || codes[0];
+}
+function familyCard(it) {
+  const members = it.codes.map(findSku);
+  const shown = famPhotoCode(it.codes);
+  const col = catColorForCode(shown);
+  const initial = (it.name || '?').trim()[0] || '·';
+  const total = famTotal(it.codes);
+  const img = hasImage(shown)
+    ? '<img data-src="' + esc(imageUrl(shown)) + '" alt="' + esc(it.name) + '" decoding="async" onload="this.classList.add(\'on\')" onerror="this.remove()">'
+    : '';
+  const vars = familyVariantsHtml(members);
+  return '<div class="prod pcard fam' + (total > 0 ? ' has-qty' : '') + '" data-family="' + esc(it.family) + '" data-codes="' + esc(it.codes.join('|')) + '">' +
+    '<div class="pthumb" style="background:' + col.bg + '">' +
+      '<span class="pinitial" style="color:' + col.fg + '">' + esc(initial) + '</span>' + img +
+      (total > 0 ? '<span class="pqty-badge">' + total + '</span>' : '') +
+      (vars ? '<span class="pswatches">' + vars + '</span>' : '') +
+    '</div>' +
+    '<div class="pname">' + esc(it.name) + '</div>' +
+    '<div class="pcard-action">' + famAction(it) + '</div></div>';
+}
+function familyListCard(it) {
+  const members = it.codes.map(findSku);
+  const shown = famPhotoCode(it.codes);
+  const col = catColorForCode(shown);
+  const initial = (it.name || '?').trim()[0] || '·';
+  const total = famTotal(it.codes);
+  const thumb = '<div class="lthumb" style="background:' + col.bg + ';color:' + col.fg + '">' +
+    '<span class="pinitial" style="font-size:20px">' + esc(initial) + '</span>' +
+    (hasImage(shown) ? '<img src="' + esc(imageUrl(shown)) + '" alt="" loading="lazy" decoding="async" onload="this.classList.add(\'on\')" onerror="this.remove()">' : '') + '</div>';
+  return '<div class="prod lcard fam' + (total > 0 ? ' has-qty' : '') + '" data-family="' + esc(it.family) + '" data-codes="' + esc(it.codes.join('|')) + '">' + thumb +
+    '<div class="linfo"><div class="lname">' + esc(it.name) + '</div>' +
+      '<div class="lmeta"><span class="lvars">' + familyVariantsHtml(members) + '</span>' +
+        '<span class="lsku">' + it.codes.length + ' סוגים</span></div></div>' +
+    '<div class="pcard-action">' + famAction(it) + '</div></div>';
+}
+// In-place update (like refreshCard): action, badge, highlight — the photo is left alone.
+function refreshFamilyCards(famCode) {
+  document.querySelectorAll('#plist .prod.fam[data-family="' + (window.CSS && CSS.escape ? CSS.escape(famCode) : famCode) + '"]').forEach(card => {
+    const it = { family: famCode, codes: card.getAttribute('data-codes').split('|') };
+    const total = famTotal(it.codes);
+    card.classList.toggle('has-qty', total > 0);
+    const act = card.querySelector('.pcard-action');
+    if (act) act.innerHTML = famAction(it);
+    const thumb = card.querySelector('.pthumb');
+    let badge = card.querySelector('.pqty-badge');
+    if (total > 0 && thumb) {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'pqty-badge'; thumb.appendChild(badge); }
+      badge.textContent = total;
+    } else if (badge) badge.remove();
+  });
+}
+
+function renderAttrFilter() {
+  const el = document.getElementById('attr-filter');
+  const off = () => { el.classList.add('hidden'); el.innerHTML = ''; };
+  if (searchQuery || activeTab === 'favorites' || !activeTab) return off();
+  const pool = catalog.skus.filter(s => s.market_type_id === activeTab && s.category_id === activeCat);
+  const rows = (catalog.attributes || []).filter(a => a.filterable).map(a => {
+    const present = new Set(pool.map(s => s.attrs && s.attrs[a.code]).filter(Boolean));
+    return { a, opts: (a.options || []).filter(o => present.has(o.code)) };
+  }).filter(r => r.opts.length >= 2);
+  if (!rows.length) return off();
+  el.classList.remove('hidden');
+  el.innerHTML = rows.map(r =>
+    '<span class="attr-filter-label">' + esc(r.a.label) + '</span>' +
+    '<button class="pill' + (!attrFilter || attrFilter.attr !== r.a.code ? ' on' : '') + '" onclick="setAttrFilter(\'' + js(r.a.code) + '\',\'\')">הכל</button>' +
+    r.opts.map(o => '<button class="pill' + (attrFilter && attrFilter.attr === r.a.code && attrFilter.value === o.code ? ' on' : '') + '" ' +
+      'onclick="setAttrFilter(\'' + js(r.a.code) + '\',\'' + js(o.code) + '\')">' + swatchHtml(r.a.code, o.code) + esc(o.label) + '</button>').join('')
+  ).join('');
+}
+function setAttrFilter(attr, value) { attrFilter = value ? { attr, value } : null; renderCatalog(); }
+
+// ── the variant sheet ──
+function openVariant(fam, codesStr) {
+  if (!famIndex[fam]) return;
+  const members = codesStr.split('|').map(findSku).filter(Boolean);
+  if (!members.length) return;
+  // Open on a variant already in the cart, else the one the colour filter points at, else the first.
+  const start = members.find(m => (qty[m.sku_code] || 0) > 0)
+    || (attrFilter && members.find(m => m.attrs && m.attrs[attrFilter.attr] === attrFilter.value))
+    || members[0];
+  variantSheet = { fam, codes: members.map(m => m.sku_code), code: start.sku_code };
+  variantEntry = { back: rawCloseVariant };
+  openOverlay(variantEntry);
+  renderVariant();
+}
+function rawCloseVariant() {
+  variantSheet = null;
+  const el = document.getElementById('variant');
+  el.classList.add('hidden'); el.innerHTML = '';
+}
+function closeVariant() { const e = variantEntry; variantEntry = null; rawCloseVariant(); unwindOverlay(e); }
+function variantBackdrop(e) { if (e.target === e.currentTarget) closeVariant(); }
+// Choosing a value always lands on a real SKU: the exact combination if it exists, else the member
+// with that value that keeps the most of the other current choices.
+function pickVariant(axis, value) {
+  if (!variantSheet) return;
+  const members = variantSheet.codes.map(findSku);
+  const cur = findSku(variantSheet.code);
+  const want = Object.assign({}, cur.attrs || {}, { [axis]: value });
+  const axes = varyingAxes(members);
+  let best = null, bestScore = -1;
+  members.forEach(m => {
+    if (!m.attrs || m.attrs[axis] !== value) return;
+    const score = axes.filter(a => m.attrs[a] === want[a]).length;
+    if (score > bestScore) { best = m; bestScore = score; }
+  });
+  if (best) variantSheet.code = best.sku_code;
+  renderVariant();
+}
+function renderVariant() {
+  const el = document.getElementById('variant');
+  if (!variantSheet) { el.classList.add('hidden'); return; }
+  const f = famIndex[variantSheet.fam];
+  const members = variantSheet.codes.map(findSku);
+  const cur = findSku(variantSheet.code);
+  const axes = varyingAxes(members);
+  const code = cur.sku_code;
+  const q = qty[code] || 0;
+  const col = catColorForCode(code);
+  const thumb = '<div class="vs-thumb" style="background:' + col.bg + ';color:' + col.fg + '">' +
+    '<span class="pinitial" style="font-size:22px">' + esc((f.fam.name || '?').trim()[0] || '·') + '</span>' +
+    (hasImage(code) ? '<img src="' + esc(imageUrl(code)) + '" alt="" decoding="async" onload="this.classList.add(\'on\')" onerror="this.remove()">' : '') + '</div>';
+  const axesHtml = axes.map(a => {
+    const def = attrIndex[a] && attrIndex[a].def;
+    if (!def) return '';
+    const vals = def.options.filter(o => members.some(m => m.attrs && m.attrs[a] === o.code));
+    return '<div class="vs-axis"><div class="vs-axis-label">' + esc(def.label) + '</div><div class="vs-chips">' +
+      vals.map(o => {
+        const on = cur.attrs && cur.attrs[a] === o.code;
+        const inCart = members.filter(m => m.attrs && m.attrs[a] === o.code).reduce((n, m) => n + (qty[m.sku_code] || 0), 0);
+        return '<button class="vs-chip' + (on ? ' on' : '') + '" onclick="pickVariant(\'' + js(a) + '\',\'' + js(o.code) + '\')">' +
+          swatchHtml(a, o.code) + esc(o.label) + (inCart ? '<span class="vs-chip-q">' + inCart + '</span>' : '') + '</button>';
+      }).join('') + '</div></div>';
+  }).join('');
+  const unit = cur.unit && cur.base_units_per_unit ? cur.unit + ' · ' + cur.base_units_per_unit + ' ' + (cur.base_unit || '') : '';
+  const conv = convText(code, q);
+  const ctrl = q > 0
+    ? '<div class="stepper">' +
+        '<button class="qbtn minus" onclick="dec(\'' + js(code) + '\')" aria-label="הפחת">−</button>' +
+        '<button class="qnum" onclick="openKeypad(\'' + js(code) + '\')">' + q + '</button>' +
+        '<button class="qbtn plus" onclick="inc(\'' + js(code) + '\')" aria-label="הוסף">+</button></div>'
+    : '<button class="add-btn" onclick="add(\'' + js(code) + '\')"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>הוסף</button>';
+  el.className = 'sheet-backdrop';
+  el.innerHTML =
+    '<div class="sheet" onclick="event.stopPropagation()">' +
+      '<div class="sheet-handle"></div>' +
+      '<div class="vs-head">' + thumb + '<div style="min-width:0">' +
+        '<div class="vs-title">' + esc(f.fam.name) + '</div>' +
+        (f.fam.description ? '<div class="vs-desc">' + esc(f.fam.description) + '</div>' : '') +
+        (f.fam.features ? '<div class="vs-desc">' + esc(f.fam.features) + '</div>' : '') +
+      '</div></div>' +
+      axesHtml +
+      '<div class="vs-pick"><div class="vs-pick-info">' +
+        '<div class="vs-pick-name">' + esc(cur.name) + '</div>' +
+        '<div class="vs-pick-meta">' + esc(displayCode(code)) + (unit ? ' · ' + esc(unit) : '') + (conv ? ' · ' + esc(conv) : '') + '</div>' +
+      '</div>' + ctrl + '</div>' +
+      '<button class="keypad-confirm" onclick="closeVariant()">סיום</button>' +
+    '</div>';
+  el.setAttribute('onclick', 'variantBackdrop(event)');
 }
 
 // ══════════════════ CART ══════════════════
